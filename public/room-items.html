@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Room Scope - Hemaji Malad</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --surface: #ffffff;
+        --page-bg: #f5f7fb;
+        --accent: #1d4ed8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        background: var(--page-bg);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 28px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .topbar .subtitle {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--muted);
+        letter-spacing: 0.2px;
+      }
+
+      .download-btn {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        padding: 12px 22px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--accent);
+        color: #ffffff;
+        box-shadow: 0 10px 20px rgba(29, 78, 216, 0.28);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .download-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 24px rgba(29, 78, 216, 0.34);
+      }
+
+      main {
+        max-width: 980px;
+        margin: 26px auto 60px;
+        display: grid;
+        gap: 24px;
+        padding: 0 18px;
+      }
+
+      .page {
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 28px 32px 32px;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .page + .page {
+        break-before: page;
+        page-break-before: always;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 16px;
+      }
+
+      .page-header--center {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .page-header--center > div {
+        width: 100%;
+      }
+
+      .mantra {
+        font-size: 13px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .customer {
+        margin-top: 6px;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .room-title {
+        margin: 18px 0 8px;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      thead th {
+        text-align: left;
+        font-size: 12px;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: #f3f4f6;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      tbody td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .col-num,
+      .col-qty,
+      .col-amt {
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .total-row td {
+        background: #f9fafb;
+        font-weight: 700;
+      }
+
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+        }
+
+        .topbar {
+          display: none;
+        }
+
+        main {
+          margin: 0;
+          padding: 0;
+          gap: 0;
+        }
+
+        .page {
+          box-shadow: none;
+          border-radius: 0;
+          padding: 18mm 12mm 16mm;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Room Scope Summary</h1>
+        <div class="subtitle">Shree Ganeshay Namah • Hemaji Malad</div>
+      </div>
+      <button class="download-btn" id="downloadPdf">Download PDF</button>
+    </header>
+
+    <main id="pdf-root">
+      <section class="page">
+        <div class="page-header page-header--center">
+          <div>
+            <div class="mantra">Shree Ganeshay Namah</div>
+            <div class="customer">Hemaji Malad</div>
+          </div>
+        </div>
+        <h2 class="room-title">Parents Bedroom</h2>
+        <table>
+          <thead>
+            <tr>
+              <th class="col-num">SR.NO</th>
+              <th>DESCRIPTION</th>
+              <th class="col-qty">QTY (SQFT)</th>
+              <th class="col-amt">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-num">1</td>
+              <td>Wardrobe</td>
+              <td class="col-qty">63 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">2</td>
+              <td>Over Storage</td>
+              <td class="col-qty">7 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">3</td>
+              <td>Bed</td>
+              <td class="col-qty">36 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">4</td>
+              <td>Side Table</td>
+              <td class="col-qty">2 nos</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">5</td>
+              <td>Bed Panelling</td>
+              <td class="col-qty">90 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">6</td>
+              <td>Dressing Table</td>
+              <td class="col-qty">14 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">7</td>
+              <td>Panelling</td>
+              <td class="col-qty">54 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">8</td>
+              <td>T.V Unit Stand</td>
+              <td class="col-qty">1 nos</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">9</td>
+              <td>Storage (Cupboard)</td>
+              <td class="col-qty">38 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">10</td>
+              <td>A.C Panelling</td>
+              <td class="col-qty">22 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">11</td>
+              <td>Bedroom Door</td>
+              <td class="col-qty">27 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">12</td>
+              <td>Bathroom Door</td>
+              <td class="col-qty">16 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">13</td>
+              <td>Bathroom Ceiling</td>
+              <td class="col-qty">32 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr class="total-row">
+              <td class="col-num"></td>
+              <td>Total</td>
+              <td class="col-qty">399 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="page">
+        <h2 class="room-title">Kitchen</h2>
+        <table>
+          <thead>
+            <tr>
+              <th class="col-num">SR.NO</th>
+              <th>DESCRIPTION</th>
+              <th class="col-qty">QTY (SQFT)</th>
+              <th class="col-amt">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-num">1</td>
+              <td>Bottom Storage</td>
+              <td class="col-qty">36 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">2</td>
+              <td>Over Storage</td>
+              <td class="col-qty">53 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">3</td>
+              <td>Addward Storage</td>
+              <td class="col-qty">5 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">4</td>
+              <td>Microwave Storage Unit</td>
+              <td class="col-qty">15 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">5</td>
+              <td>6 Drawer / Pull Out</td>
+              <td class="col-qty">2 nos</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr class="total-row">
+              <td class="col-num"></td>
+              <td>Total</td>
+              <td class="col-qty">109 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="page">
+        <h2 class="room-title">Daughters Bedroom</h2>
+        <table>
+          <thead>
+            <tr>
+              <th class="col-num">SR.NO</th>
+              <th>DESCRIPTION</th>
+              <th class="col-qty">QTY (SQFT)</th>
+              <th class="col-amt">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-num">1</td>
+              <td>Wardrobe</td>
+              <td class="col-qty">62 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">2</td>
+              <td>T.V Unit Stand</td>
+              <td class="col-qty">1 nos</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">3</td>
+              <td>Sitting</td>
+              <td class="col-qty">6 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">4</td>
+              <td>Bed</td>
+              <td class="col-qty">36 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">5</td>
+              <td>Study Table</td>
+              <td class="col-qty">1 nos</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">6</td>
+              <td>Study Storage</td>
+              <td class="col-qty">10 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">7</td>
+              <td>Study Panelling</td>
+              <td class="col-qty">12 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">8</td>
+              <td>Side Table</td>
+              <td class="col-qty">1 nos</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">9</td>
+              <td>Bed Panelling</td>
+              <td class="col-qty">58 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">10</td>
+              <td>Bedroom Door</td>
+              <td class="col-qty">27 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">11</td>
+              <td>Dressing Table</td>
+              <td class="col-qty">20 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">12</td>
+              <td>Dressing Panelling</td>
+              <td class="col-qty">20 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">13</td>
+              <td>T.V Panelling</td>
+              <td class="col-qty">31 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">14</td>
+              <td>Bathroom Door</td>
+              <td class="col-qty">16 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">15</td>
+              <td>Bathroom Ceiling</td>
+              <td class="col-qty">35 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">16</td>
+              <td>A.C Panelling</td>
+              <td class="col-qty">20 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr class="total-row">
+              <td class="col-num"></td>
+              <td>Total</td>
+              <td class="col-qty">353 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="page">
+        <h2 class="room-title">Children Room (Bedroom)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th class="col-num">SR.NO</th>
+              <th>DESCRIPTION</th>
+              <th class="col-qty">QTY (SQFT)</th>
+              <th class="col-amt">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-num">1</td>
+              <td>Wardrobe</td>
+              <td class="col-qty">43 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">2</td>
+              <td>Bed</td>
+              <td class="col-qty">23 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">3</td>
+              <td>Sitting</td>
+              <td class="col-qty">6 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">4</td>
+              <td>Study Table</td>
+              <td class="col-qty">1 nos</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">5</td>
+              <td>Study Storage</td>
+              <td class="col-qty">11 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">6</td>
+              <td>Storage (Side)</td>
+              <td class="col-qty">6 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">7</td>
+              <td>Over Storage</td>
+              <td class="col-qty">20 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">8</td>
+              <td>Panelling + Storage</td>
+              <td class="col-qty">36 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">9</td>
+              <td>Door</td>
+              <td class="col-qty">27 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr class="total-row">
+              <td class="col-num"></td>
+              <td>Total</td>
+              <td class="col-qty">172 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="page">
+        <h2 class="room-title">Living Room</h2>
+        <table>
+          <thead>
+            <tr>
+              <th class="col-num">SR.NO</th>
+              <th>DESCRIPTION</th>
+              <th class="col-qty">QTY (SQFT)</th>
+              <th class="col-amt">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-num">1</td>
+              <td>T.V Unit Stand</td>
+              <td class="col-qty">1 nos</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">2</td>
+              <td>Mandir Wardrobe</td>
+              <td class="col-qty">27 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">3</td>
+              <td>T.V Panelling</td>
+              <td class="col-qty">27 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">4</td>
+              <td>Sofa Panelling</td>
+              <td class="col-qty">0 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">5</td>
+              <td>Passage Wall Panelling</td>
+              <td class="col-qty">27 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">6</td>
+              <td>Passage Partition Panelling</td>
+              <td class="col-qty">54 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">7</td>
+              <td>Bathroom Door</td>
+              <td class="col-qty">16 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">8</td>
+              <td>A.C Panelling</td>
+              <td class="col-qty">40 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">9</td>
+              <td>Dining Area</td>
+              <td class="col-qty">81 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">10</td>
+              <td>Bathroom Ceiling</td>
+              <td class="col-qty">32 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr class="total-row">
+              <td class="col-num"></td>
+              <td>Total</td>
+              <td class="col-qty">304 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="page">
+        <h2 class="room-title">Main Door Area</h2>
+        <table>
+          <thead>
+            <tr>
+              <th class="col-num">SR.NO</th>
+              <th>DESCRIPTION</th>
+              <th class="col-qty">QTY (SQFT)</th>
+              <th class="col-amt">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-num">1</td>
+              <td>Safety Door</td>
+              <td class="col-qty">30 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">2</td>
+              <td>Main Door</td>
+              <td class="col-qty">30 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">3</td>
+              <td>Store Room</td>
+              <td class="col-qty">48 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">4</td>
+              <td>Panelling</td>
+              <td class="col-qty">100 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">5</td>
+              <td>Storage Shoe</td>
+              <td class="col-qty">20 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr>
+              <td class="col-num">6</td>
+              <td>Shoe Rack</td>
+              <td class="col-qty">15 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+            <tr class="total-row">
+              <td class="col-num"></td>
+              <td>Total</td>
+              <td class="col-qty">243 sqft</td>
+              <td class="col-amt"></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+      const downloadBtn = document.getElementById("downloadPdf");
+      const pdfRoot = document.getElementById("pdf-root");
+
+      downloadBtn.addEventListener("click", () => {
+        const options = {
+          margin: [10, 10, 12, 10],
+          filename: "Hemaji_Malad_Room_Scope.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] },
+        };
+
+        html2pdf().set(options).from(pdfRoot).save();
+      });
+    </script>
+  </body>
+</html>
