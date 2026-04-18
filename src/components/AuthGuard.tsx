@@ -12,9 +12,12 @@ export default function AuthGuard({ children, requiredRole }: { children: React.
 
   useEffect(() => {
     const checkAuth = async () => {
-      // If no token, redirect to login
+      // If no token, redirect to login unless it's still hydrating from localStorage
       if (!token) {
-        router.push(`/login?redirect=${pathname}`);
+        const localToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (!localToken) {
+          router.push(`/login?redirect=${pathname}`);
+        }
         return;
       }
 

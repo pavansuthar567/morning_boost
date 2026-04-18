@@ -22,6 +22,18 @@ export interface WalletState {
   transactions: any[];
 }
 
+export interface ProductBenefit {
+  title: string;
+  description: string;
+}
+
+export interface RecipeItem {
+  ingredientId: string;
+  ingredientName: string;
+  qtyPerBottle: number;
+  unit: string;
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -29,6 +41,10 @@ export interface Product {
   category: string;
   image: string;
   description?: string;
+  ingredients?: string[];
+  benefits?: string[];
+  detailedBenefits?: ProductBenefit[];
+  recipe?: RecipeItem[];
   isActive: boolean;
 }
 
@@ -48,7 +64,7 @@ export interface Subscription {
 
 export interface Order {
   _id: string;
-  user?: { name: string; phone: string };
+  user?: { name: string; phone: string; avatar?: string };
   items: { product: any; quantity: number; price: number }[];
   deliveryDate: string;
   status: string;
@@ -63,6 +79,8 @@ interface AppStore {
   // Connection State
   isBackendConnected: boolean;
   setIsBackendConnected: (connected: boolean) => void;
+  isLiveMode: boolean;
+  setIsLiveMode: (live: boolean) => void;
 
   // Auth
   user: User | null;
@@ -158,6 +176,8 @@ const useStore = create<AppStore>()(
       // ---- Connection State ----
       isBackendConnected: false,
       setIsBackendConnected: (connected) => set({ isBackendConnected: connected }),
+      isLiveMode: false,
+      setIsLiveMode: (live) => set({ isLiveMode: live }),
 
       // ---- Testimonials Data ----
       testimonials: [
@@ -335,6 +355,11 @@ const useStore = create<AppStore>()(
       products: [],
 
       fetchProducts: async () => {
+        if (!get().isLiveMode) {
+          set({ products: get().adminData.inventory, isBackendConnected: false });
+          return;
+        }
+
         try {
           const res = await fetch(`${API_URL}/products`);
           const data = await res.json();
@@ -342,7 +367,7 @@ const useStore = create<AppStore>()(
             set({ products: data.products, isBackendConnected: true });
           }
         } catch {
-          set({ isBackendConnected: false });
+          set({ isBackendConnected: false, products: get().adminData.inventory });
         }
       },
 
@@ -431,6 +456,22 @@ const useStore = create<AppStore>()(
       },
 
       createSubscription: async (schedule, deliveryAddress) => {
+        if (!get().isLiveMode) {
+          const mockSub: Subscription = {
+            _id: `sub_mock_${Date.now()}`,
+            schedule: schedule.map((s: any) => ({
+               dayOfWeek: s.dayOfWeek,
+               product: s.productId,
+               isPaused: false
+            })),
+            status: 'active',
+            deliveryAddress: deliveryAddress,
+            timeSlot: '7:00 - 8:00 AM'
+          };
+          set({ subscription: mockSub });
+          return;
+        }
+
         const { token } = get();
         if (!token) throw new Error('Not authenticated');
         set({ isLoading: true });
@@ -550,17 +591,127 @@ const useStore = create<AppStore>()(
 
       // ---- Admin Data ----
       adminData: {
-        subscribers: [],
-        inventory: [],
-        allOrders: [],
+        subscribers: [
+          {
+            _id: 'sub_1', name: 'Alex Johnson', email: 'alex.j@icloud.com', phone: '9876543210',
+            role: 'user', isActive: true, initials: 'AJ', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange',
+            plan: 'Daily Vitality Pro', planBg: 'bg-primary/10', planColor: 'text-vibrant-orange',
+            preferences: ['bg-orange-400', 'bg-green-400', 'bg-red-400'], nextRenewal: 'Nov 24, 2024'
+          },
+          {
+            _id: 'sub_2', name: 'Sofia Miller', email: 'sofia@design.co', phone: '9123456780',
+            role: 'user', isActive: true, initials: 'SM', avatarBg: 'bg-green-100', avatarColor: 'text-green-600',
+            plan: 'Weekend Refresh', planBg: 'bg-secondary-container/50', planColor: 'text-on-secondary-container',
+            preferences: ['bg-green-400', 'bg-yellow-400'], nextRenewal: 'Nov 28, 2024'
+          },
+        ],
+        inventory: [
+          {
+            _id: 'prod_1', name: 'Green Vitality', price: 85, category: 'Immunity', isActive: true, stock: 142, stockLevel: 'ok',
+            description: 'A powerful blend of alkalizing greens and roots, designed to flush toxins and rebuild cellular strength.',
+            ingredients: ['Kale', 'Spinach', 'Green Apple', 'Lemon', 'Ginger'],
+            benefits: ['🌿 Anti-Inflammatory', '🛡️ Cellular Defense', '🧬 Gut Health'],
+            detailedBenefits: [
+              { title: 'Anti-Inflammatory Power', description: 'Ginger and leafy greens work synergistically to reduce systemic inflammation and soothe digestion.' },
+              { title: 'Cellular Defense', description: 'High in Vitamin C from lemon and green apple, fortifying your immune system against daily stressors.' },
+              { title: 'Gut Health', description: 'Rich in soluble fiber which acts as a prebiotic, nourishing your microbiome for better nutrient absorption.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_1', ingredientName: 'Kale', qtyPerBottle: 0.3, unit: 'kg' },
+              { ingredientId: 'ing_2', ingredientName: 'Spinach', qtyPerBottle: 0.2, unit: 'kg' },
+              { ingredientId: 'ing_3', ingredientName: 'Green Apple', qtyPerBottle: 0.25, unit: 'kg' },
+              { ingredientId: 'ing_4', ingredientName: 'Lemon', qtyPerBottle: 1, unit: 'pcs' },
+              { ingredientId: 'ing_5', ingredientName: 'Ginger', qtyPerBottle: 25, unit: 'gm' },
+            ],
+            image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1QuAZLQgXCBHxy0BcEKhRglzerfWWC-1vPn7NXZciyOqV_MZgInCEWjivoDmzw_XLtny0YeXfJoFb7zrHBi3BTX-8QVbJRBdjeAPbKJnhIZLPQXlrJ4kUlrFihd_qCx4lbucJ6uXSk0tXYwFuQb2-gr_4zjfE1XZ-0Bf5AoVu12NBnleBwT9AbcdsNO2bzPcNzX8rEN4tdP6e14o9wZrdNAnKYZPERcoTEOnO32z3afdKSme0XJXKoEMDo-gB7Byc5EnnQIwmZwc',
+          },
+          {
+            _id: 'prod_2', name: 'Citrus Glow', price: 79, category: 'Energy', isActive: true, stock: 24, stockLevel: 'low',
+            description: 'A vibrant, metabolism-boosting citrus blend packed with vitamin C and anti-inflammatory turmeric.',
+            ingredients: ['Orange', 'Grapefruit', 'Turmeric', 'Cayenne'],
+            benefits: ['✨ Skin Radiance', '⚡ Natural Energy', '💊 High Vitamin C'],
+            detailedBenefits: [
+              { title: 'Skin Radiance', description: 'Massive doses of Vitamin C promote collagen production, leading to glowing, elastic skin.' },
+              { title: 'Natural Energy', description: 'Natural sugars from citrus combined with the metabolic kick of cayenne provide sustained, clean energy.' },
+              { title: 'Immune Boost', description: 'Turmeric and grapefruit offer a dual-action defense mechanism against pathogens and free radicals.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_6', ingredientName: 'Orange', qtyPerBottle: 0.5, unit: 'kg' },
+              { ingredientId: 'ing_7', ingredientName: 'Grapefruit', qtyPerBottle: 0.25, unit: 'kg' },
+              { ingredientId: 'ing_8', ingredientName: 'Turmeric', qtyPerBottle: 20, unit: 'gm' },
+              { ingredientId: 'ing_9', ingredientName: 'Cayenne', qtyPerBottle: 5, unit: 'gm' },
+            ],
+            image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBbA9CAicGuI3_qnblBkoS5JUaLGJiLMkMgWW-UhG8AGeY2G4HAMMHz2LmIpvAX8BD2ZC0GqHCeI0iY5ostmkp69mQheBa86_T9N-QhcOXWjJfkZblGf7Xk0L3yIPlpqysdbQIXRcR3g6GPrg7JlWwAHm-wR9AoJOCCirdtxNpCLmHdH20oQ6n2njZ0YxCLDAk1_zkwHS5VKKAzyxxFvxwAfoqCPI5jgkulkKw6ePnVabZrU_A5T1CQ9jRnJXF0Dq27zR1n7e3oPdU',
+          },
+          {
+            _id: 'prod_3', name: 'Beet Rooted', price: 90, category: 'Detox', isActive: true, stock: 88, stockLevel: 'ok',
+            description: 'An earthy, stamina-building root blend that improves blood flow and delivers rapid hydration.',
+            ingredients: ['Beetroot', 'Blueberry', 'Apple', 'Mint'],
+            benefits: ['🩸 Iron Rich', '🏃‍♂️ Stamina Boost', '💧 Cellular Hydration'],
+            detailedBenefits: [
+              { title: 'Iron Rich & Blood Flow', description: 'Beetroot is famous for increasing nitric oxide in the blood, relaxing blood vessels and improving circulation.' },
+              { title: 'Stamina Boost', description: 'The unique natural nitrates provide a measurable increase in physical endurance and oxygen utilization.' },
+              { title: 'Antioxidant Load', description: 'Blueberries add a massive dose of anthocyanins, fighting oxidative stress and cellular aging.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_10', ingredientName: 'Beetroot', qtyPerBottle: 0.5, unit: 'kg' },
+              { ingredientId: 'ing_11', ingredientName: 'Blueberry', qtyPerBottle: 100, unit: 'gm' },
+              { ingredientId: 'ing_3', ingredientName: 'Apple', qtyPerBottle: 0.3, unit: 'kg' },
+              { ingredientId: 'ing_12', ingredientName: 'Mint', qtyPerBottle: 1, unit: 'bunch' },
+            ],
+            image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIrfiBzFWaXV4otHis8tCw4zQvYiuhbSV-LBjN1kSlQTzUDlDFg4gW1vjSDrpxjNh_YAIgmwhL0skxCoTSyL5OFVN3as4AR_fFgJoWIHnBgC6WfJmRkgVGEnpBIfabjNRsPPVQ2qMrBM2dMcfJ_JsS2_kkT9FOQ_Kv8lAG6KcGMHgljGIoUuqyineCTxBz-1fX8JtkmvScLUQt9ha9RmprJbTCrMCZQpO8SvsRnT7dnU5Y_KAbefSPmtlhYqohE1lWjUmpnjvasf8',
+          },
+        ],
+        allOrders: [
+          {
+            _id: 'ord_1', user: { name: 'Sarah Jenkins', phone: '9900112233', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDZlOiPfUUaPcxaPfkqxhbbeQheAZii9NymCCZEc-4NcgsLxLjyeEeb0VitHyAV46hO03wr2mCf4s5ajqZ41qiIwmrdKwUmYoYqPufAFtyZX7Fej06FGgBHfqhJYXwkvZLusJqRw1jI7pL2WHqo0NZfBt5PexlAOgkpuoTuFMBsGSRqfQXBpz5qyG_c8Gj9DoxIp0Sn1H3GqFP9_Y-ZgxLsTaNA2HHHif5e6OreQSKD8LCtwq6gND00FsbjzVhT1FUcFseLId0pDGU' },
+            items: [{ product: { name: '3x Green Vitality, 2x Citrus Glow' }, quantity: 5, price: 85 }],
+            deliveryDate: new Date().toISOString(), status: 'delivered', paymentStatus: 'paid',
+            totalAmount: 255, deliveryAddress: 'Downtown B-12'
+          },
+          {
+            _id: 'ord_2', user: { name: 'Marcus Chen', phone: '9988776655', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA_qAv5HZPACLIluzoUao6Qp-UUN9J-U5yr75uC2Lf_UFhuVSfPOx0m0MR5hEbOKZRNauwzgZjtccwCpmcqProRgrpM801CJwB5wUKOtrR14kmoa4Uv170agORUvWOMayx4k2C3wXzLxQUyNJd8t-mSOBtDNEEoZ7lOmxqOyM866nPfw8qJ13S3RfkXV_IuavjoObWuo--fRtGvJ5CF6irTTHFDSijVkxH73xhQEZAsfc09W9XXFTt3rqJ5eb1OJFuXREwWWuqXl1c' },
+            items: [{ product: { name: '5x Morning Detox Pack' }, quantity: 5, price: 90 }],
+            deliveryDate: new Date().toISOString(), status: 'out_for_delivery', paymentStatus: 'paid',
+            totalAmount: 450, deliveryAddress: 'West Side A-04'
+          },
+          {
+            _id: 'ord_3', user: { name: 'Elena Rodriguez', phone: '9876501234', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBJF3WnR0KgzK2-c6uk_kWLWgsOEBzPhukZifn9PA-aHURcVQO0DMu1AeMFPb_sLClQBo9_wDqS7k5e21_Wk-q3I6seLKLg-UYD-SsF9myaRHUxPzIK0w7HaW5PSDelD0A0LFFtPjErXuA9ZrBNLLZRYvdFxnVUFpspGX4tf_tUf123YARyHlFmALLgrJfE122JUqf811wV7ASGHgV6vm7HDD5ojXNozfrM5ZL3gHyy4I7s7yC2v7BGedJujVC6u-KGqP8K14vzFWs' },
+            items: [{ product: { name: 'Weekly Renewal Plan' }, quantity: 1, price: 500 }],
+            deliveryDate: new Date().toISOString(), status: 'pending', paymentStatus: 'paid',
+            totalAmount: 500, deliveryAddress: 'North Hills C-09'
+          },
+        ],
         procurement: [],
         recipes: [],
-        stats: null,
+        stats: {
+          activeRhythms: 18,
+          todayDemand: 22,
+          walletLiability: 4850,
+          realizedRevenue: 12600,
+          totalDeposits: 17450,
+          pauseRate: 11,
+          pausedUsers: 2,
+          pressingList: [
+            { name: 'Green Vitality', qty: 8, price: 85 },
+            { name: 'Citrus Glow', qty: 6, price: 79 },
+            { name: 'Beet Rooted', qty: 5, price: 90 },
+            { name: 'Tropical Sunrise', qty: 3, price: 95 },
+          ],
+          deliverySnapshot: {
+            totalDrops: 22,
+            zones: [
+              { name: 'Downtown', drops: 9 },
+              { name: 'West Side', drops: 7 },
+              { name: 'North Hills', drops: 6 },
+            ]
+          }
+        },
       },
 
       fetchAdminData: async (type) => {
-        const { token } = get();
-        if (!token) return;
+        const { token, isLiveMode } = get();
+        if (!token || !isLiveMode) return;
         try {
           let endpoint = '';
           switch (type) {
@@ -578,21 +729,25 @@ const useStore = create<AppStore>()(
           const data = await res.json();
 
           if (data.success) {
+            // Check again if live mode has changed while fetching
+            if(!get().isLiveMode) return;
+
             set((state) => ({
               adminData: {
                 ...state.adminData,
-                ...(type === 'subscribers' ? { subscribers: data.subscribers } : {}),
-                ...(type === 'inventory' ? { inventory: data.ingredients } : {}),
-                ...(type === 'orders' ? { allOrders: data.orders } : {}),
-                ...(type === 'stats' ? { stats: data.stats } : {}),
+                // Only replace if the API actually returned an array/data, otherwise keep existing dummy data
+                ...(type === 'subscribers' && data.subscribers?.length > 0 ? { subscribers: data.subscribers } : {}),
+                ...(type === 'inventory' && data.ingredients?.length > 0 ? { inventory: data.ingredients } : {}),
+                ...(type === 'orders' && data.orders?.length > 0 ? { allOrders: data.orders } : {}),
+                ...(type === 'stats' && data.stats ? { stats: data.stats } : {}),
                 ...(type === 'procurement' ? { procurement: data.ingredients || [] } : {}),
-                ...(type === 'recipes' ? { recipes: data.recipes } : {}),
+                ...(type === 'recipes' && data.recipes?.length > 0 ? { recipes: data.recipes } : {}),
               },
               isBackendConnected: true
             }));
           }
         } catch {
-          set({ isBackendConnected: false });
+          // API failed — keep default dummy data, don't overwrite
         }
       },
 
@@ -641,10 +796,17 @@ const useStore = create<AppStore>()(
       setCheckoutData: (data) => set({ checkoutData: data }),
 
       createTopUpOrder: async (amount) => {
+        if (!get().isLiveMode) {
+          return { id: `order_mock_${Date.now()}`, amount: amount * 100, currency: 'INR' };
+        }
         return await walletService.createTopupOrder(amount);
       },
 
       verifyTopUp: async (paymentData) => {
+        if (!get().isLiveMode) {
+          // Mock successful verification
+          return;
+        }
         const data = await walletService.verifyTopup(paymentData);
         if (!data.success) throw new Error(data.error);
 

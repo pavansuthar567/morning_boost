@@ -3,6 +3,16 @@
 @import "tailwindcss";
 
 @theme {
+  /* ... */
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@theme {
   /* Fonts */
   --font-headline: 'Plus Jakarta Sans', sans-serif;
   --font-body: 'Manrope', sans-serif;
