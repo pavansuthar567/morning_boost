@@ -22,6 +22,25 @@ export interface WalletState {
   transactions: any[];
 }
 
+export interface Supplier {
+  _id: string;
+  name: string;
+  contactName?: string;
+  phone?: string;
+  isActive: boolean;
+}
+
+export interface RawMaterial {
+  _id: string;
+  name: string;
+  unit: string;
+  pricePerUnit: number;
+  currentStock: number;
+  minStockThreshold: number;
+  supplierId: string;
+  isActive: boolean;
+}
+
 export interface ProductBenefit {
   title: string;
   description: string;
@@ -45,6 +64,7 @@ export interface Product {
   benefits?: string[];
   detailedBenefits?: ProductBenefit[];
   recipe?: RecipeItem[];
+  recipeInstructions?: string[];
   isActive: boolean;
 }
 
@@ -123,6 +143,7 @@ interface AppStore {
     allOrders: Order[];
     procurement: any[];
     recipes: any[];
+    rawMaterials: RawMaterial[];
     stats: any;
   };
   fetchAdminData: (type: 'subscribers' | 'inventory' | 'orders' | 'stats' | 'procurement' | 'recipes') => Promise<void>;
@@ -623,6 +644,12 @@ const useStore = create<AppStore>()(
               { ingredientId: 'ing_4', ingredientName: 'Lemon', qtyPerBottle: 1, unit: 'pcs' },
               { ingredientId: 'ing_5', ingredientName: 'Ginger', qtyPerBottle: 25, unit: 'gm' },
             ],
+            recipeInstructions: [
+              '1. Wash the kale and spinach thoroughly in cold water.',
+              '2. Juice the green apples and lemon first to extract base liquids.',
+              '3. Slowly process the leafy greens, followed by the ginger.',
+              '4. Strain to remove micro-fibers for a smooth texture.'
+            ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1QuAZLQgXCBHxy0BcEKhRglzerfWWC-1vPn7NXZciyOqV_MZgInCEWjivoDmzw_XLtny0YeXfJoFb7zrHBi3BTX-8QVbJRBdjeAPbKJnhIZLPQXlrJ4kUlrFihd_qCx4lbucJ6uXSk0tXYwFuQb2-gr_4zjfE1XZ-0Bf5AoVu12NBnleBwT9AbcdsNO2bzPcNzX8rEN4tdP6e14o9wZrdNAnKYZPERcoTEOnO32z3afdKSme0XJXKoEMDo-gB7Byc5EnnQIwmZwc',
           },
           {
@@ -641,6 +668,12 @@ const useStore = create<AppStore>()(
               { ingredientId: 'ing_8', ingredientName: 'Turmeric', qtyPerBottle: 20, unit: 'gm' },
               { ingredientId: 'ing_9', ingredientName: 'Cayenne', qtyPerBottle: 5, unit: 'gm' },
             ],
+            recipeInstructions: [
+              '1. Peel all citrus fruits (Orange & Grapefruit), leaving minor pith for antioxidants.',
+              '2. Juice the citrus fruits to yield a vibrant base.',
+              '3. Whisk in turmeric powder and cayenne precisely to prevent clumping.',
+              '4. Bottle immediately to prevent Vitamin C oxidation.'
+            ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBbA9CAicGuI3_qnblBkoS5JUaLGJiLMkMgWW-UhG8AGeY2G4HAMMHz2LmIpvAX8BD2ZC0GqHCeI0iY5ostmkp69mQheBa86_T9N-QhcOXWjJfkZblGf7Xk0L3yIPlpqysdbQIXRcR3g6GPrg7JlWwAHm-wR9AoJOCCirdtxNpCLmHdH20oQ6n2njZ0YxCLDAk1_zkwHS5VKKAzyxxFvxwAfoqCPI5jgkulkKw6ePnVabZrU_A5T1CQ9jRnJXF0Dq27zR1n7e3oPdU',
           },
           {
@@ -658,6 +691,12 @@ const useStore = create<AppStore>()(
               { ingredientId: 'ing_11', ingredientName: 'Blueberry', qtyPerBottle: 100, unit: 'gm' },
               { ingredientId: 'ing_3', ingredientName: 'Apple', qtyPerBottle: 0.3, unit: 'kg' },
               { ingredientId: 'ing_12', ingredientName: 'Mint', qtyPerBottle: 1, unit: 'bunch' },
+            ],
+            recipeInstructions: [
+              '1. Trim and vigorously scrub the beetroots to remove dirt.',
+              '2. Process apples and beetroots through the heavy press.',
+              '3. Crush the blueberries alongside the mint for infused flavor.',
+              '4. Mix well. Ensure deep red hue without separation.'
             ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIrfiBzFWaXV4otHis8tCw4zQvYiuhbSV-LBjN1kSlQTzUDlDFg4gW1vjSDrpxjNh_YAIgmwhL0skxCoTSyL5OFVN3as4AR_fFgJoWIHnBgC6WfJmRkgVGEnpBIfabjNRsPPVQ2qMrBM2dMcfJ_JsS2_kkT9FOQ_Kv8lAG6KcGMHgljGIoUuqyineCTxBz-1fX8JtkmvScLUQt9ha9RmprJbTCrMCZQpO8SvsRnT7dnU5Y_KAbefSPmtlhYqohE1lWjUmpnjvasf8',
           },
@@ -684,6 +723,20 @@ const useStore = create<AppStore>()(
         ],
         procurement: [],
         recipes: [],
+        rawMaterials: [
+          { _id: 'ing_1', name: 'Kale', unit: 'kg', pricePerUnit: 60, currentStock: 2.5, minStockThreshold: 1.5, supplierId: 'sup_1', isActive: true },
+          { _id: 'ing_2', name: 'Spinach', unit: 'kg', pricePerUnit: 40, currentStock: 1.0, minStockThreshold: 2.0, supplierId: 'sup_1', isActive: true },
+          { _id: 'ing_3', name: 'Green Apple', unit: 'kg', pricePerUnit: 120, currentStock: 5.0, minStockThreshold: 3.0, supplierId: 'sup_2', isActive: true },
+          { _id: 'ing_4', name: 'Lemon', unit: 'pcs', pricePerUnit: 5, currentStock: 50, minStockThreshold: 30, supplierId: 'sup_2', isActive: true },
+          { _id: 'ing_5', name: 'Ginger', unit: 'gm', pricePerUnit: 0.3, currentStock: 500, minStockThreshold: 200, supplierId: 'sup_3', isActive: true },
+          { _id: 'ing_6', name: 'Orange', unit: 'kg', pricePerUnit: 80, currentStock: 2.0, minStockThreshold: 4.0, supplierId: 'sup_2', isActive: true },
+          { _id: 'ing_7', name: 'Grapefruit', unit: 'kg', pricePerUnit: 150, currentStock: 1.5, minStockThreshold: 2.0, supplierId: 'sup_2', isActive: true },
+          { _id: 'ing_8', name: 'Turmeric', unit: 'gm', pricePerUnit: 0.4, currentStock: 1000, minStockThreshold: 500, supplierId: 'sup_3', isActive: true },
+          { _id: 'ing_9', name: 'Cayenne', unit: 'gm', pricePerUnit: 0.5, currentStock: 800, minStockThreshold: 300, supplierId: 'sup_3', isActive: true },
+          { _id: 'ing_10', name: 'Beetroot', unit: 'kg', pricePerUnit: 40, currentStock: 10.0, minStockThreshold: 5.0, supplierId: 'sup_4', isActive: true },
+          { _id: 'ing_11', name: 'Blueberry', unit: 'gm', pricePerUnit: 1.2, currentStock: 200, minStockThreshold: 500, supplierId: 'sup_5', isActive: true },
+          { _id: 'ing_12', name: 'Mint', unit: 'bunch', pricePerUnit: 10, currentStock: 15, minStockThreshold: 10, supplierId: 'sup_1', isActive: true }
+        ],
         stats: {
           activeRhythms: 18,
           todayDemand: 22,

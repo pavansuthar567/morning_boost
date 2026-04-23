@@ -79,40 +79,99 @@ export default function AdminProductsPage() {
               {/* Recipe Drawer (Expandable) */}
               {isExpanded && (
                 <div className="border-t border-slate-100 bg-slate-50 p-6 animate-in slide-in-from-top-2 duration-200">
-                  <div className="flex justify-between items-end mb-4">
-                    <div>
-                      <h4 className="font-headline font-bold text-sm text-slate-800 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary text-sm">science</span>
-                        Production Recipe (Trade Secret)
-                      </h4>
-                      <p className="text-[10px] text-slate-400 mt-1">Exact quantities per 1 bottle yield. This is used to auto-calculate procurement.</p>
-                    </div>
-                    <button className="text-xs font-bold text-primary hover:underline cursor-pointer">Edit Recipe</button>
-                  </div>
+                  <div className="flex flex-col xl:flex-row gap-8">
+                    {/* Left: Recipe Table and COGS */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-end mb-4">
+                        <div>
+                          <h4 className="font-headline font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary text-sm">science</span>
+                            Production Recipe (Trade Secret)
+                          </h4>
+                          <p className="text-[10px] text-slate-400 mt-1">Exact quantities per 1 bottle yield. This feeds into procurement logic.</p>
+                        </div>
+                        <button className="text-xs font-bold text-primary hover:underline cursor-pointer">Edit Recipe</button>
+                      </div>
 
-                  <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-                    <table className="w-full text-left whitespace-nowrap">
-                      <thead>
-                        <tr className="bg-surface-container-lowest border-b border-slate-50">
-                          <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Raw Material</th>
-                          <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Qty Per Bottle</th>
-                          <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Unit</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {product.recipe && product.recipe.length > 0 ? product.recipe.map((req: any, idx: number) => (
-                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-5 py-3 text-sm font-bold text-slate-800">{req.ingredientName}</td>
-                            <td className="px-5 py-3 text-sm font-medium text-slate-600">{req.qtyPerBottle}</td>
-                            <td className="px-5 py-3 text-xs text-slate-400 font-bold">{req.unit}</td>
-                          </tr>
-                        )) : (
-                          <tr>
-                            <td colSpan={3} className="px-5 py-8 text-center text-sm font-bold text-slate-400 italic">No recipe defined yet. Procurement amounts will be 0.</td>
-                          </tr>
+                      <div className="bg-white rounded-xl border border-slate-100 overflow-hidden mb-4">
+                        <table className="w-full text-left whitespace-nowrap">
+                          <thead>
+                            <tr className="bg-surface-container-lowest border-b border-slate-50">
+                              <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Raw Material</th>
+                              <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Qty Per Bottle</th>
+                              <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Est. Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {product.recipe && product.recipe.length > 0 ? product.recipe.map((req: any, idx: number) => {
+                              const materialItem = adminData.rawMaterials.find(m => m._id === req.ingredientId);
+                              const cost = materialItem ? (materialItem.pricePerUnit * req.qtyPerBottle).toFixed(2) : '0.00';
+                              return (
+                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="px-5 py-3 text-sm font-bold text-slate-800">{req.ingredientName}</td>
+                                  <td className="px-5 py-3 text-sm font-medium text-slate-600">{req.qtyPerBottle} <span className="text-xs text-slate-400">{req.unit}</span></td>
+                                  <td className="px-5 py-3 text-sm font-bold text-slate-600">₹{cost}</td>
+                                </tr>
+                              );
+                            }) : (
+                              <tr>
+                                <td colSpan={3} className="px-5 py-8 text-center text-sm font-bold text-slate-400 italic">No recipe defined yet.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* COGS Calculation Box */}
+                      {product.recipe && product.recipe.length > 0 && (
+                        <div className="bg-white border text-sm border-slate-100 rounded-xl p-4 flex justify-between items-center shadow-sm">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Financials</p>
+                            <p className="font-bold text-slate-800">COGS (Cost to Make): <span className="text-rose-500 font-extrabold">₹{
+                              product.recipe.reduce((total: number, req: any) => {
+                                const m = adminData.rawMaterials.find(rm => rm._id === req.ingredientId);
+                                return m ? total + (m.pricePerUnit * req.qtyPerBottle) : total;
+                              }, 0).toFixed(2)
+                            }</span></p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Gross Margin</p>
+                            <p className="font-bold text-green-600 text-lg">₹{(product.price - product.recipe.reduce((total: number, req: any) => {
+                                const m = adminData.rawMaterials.find(rm => rm._id === req.ingredientId);
+                                return m ? total + (m.pricePerUnit * req.qtyPerBottle) : total;
+                              }, 0)).toFixed(2)}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right: Recipe Instructions */}
+                    <div className="w-full xl:w-1/3">
+                      <div className="flex justify-between items-end mb-4">
+                        <div>
+                          <h4 className="font-headline font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary text-sm">format_list_numbered</span>
+                            Prep Instructions
+                          </h4>
+                          <p className="text-[10px] text-slate-400 mt-1">Standard Operating Procedure.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white rounded-xl border border-slate-100 p-5 h-[calc(100%-48px)] overflow-y-auto">
+                        {product.recipeInstructions && product.recipeInstructions.length > 0 ? (
+                          <div className="space-y-3">
+                            {product.recipeInstructions.map((step: string, idx: number) => (
+                              <div key={idx} className="flex gap-3 text-sm text-slate-600">
+                                <span className="text-primary font-bold">{step.split('.')[0]}.</span>
+                                <span>{step.substring(step.indexOf('.') + 1).trim()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm font-bold text-slate-400 italic text-center mt-6">No prep instructions defined.</p>
                         )}
-                      </tbody>
-                    </table>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
