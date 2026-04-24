@@ -40,6 +40,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                                 <span className="material-symbols-outlined">shopping_cart</span>
                                 <span>Procurement</span>
                             </Link>
+
                             <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/products">
                                 <span className="material-symbols-outlined">blender</span>
                                 <span>Products & Recipes</span>
@@ -47,6 +48,14 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                             <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/raw-materials">
                                 <span className="material-symbols-outlined">grass</span>
                                 <span>Raw Materials</span>
+                            </Link>
+                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/purchases">
+                                <span className="material-symbols-outlined">receipt_long</span>
+                                <span>Purchase Invoices</span>
+                            </Link>
+                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/suppliers">
+                                <span className="material-symbols-outlined">storefront</span>
+                                <span>Suppliers</span>
                             </Link>
                             <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/settings">
                                 <span className="material-symbols-outlined">settings</span>

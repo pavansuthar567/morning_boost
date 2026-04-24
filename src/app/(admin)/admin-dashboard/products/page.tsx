@@ -105,7 +105,7 @@ export default function AdminProductsPage() {
                           <tbody className="divide-y divide-slate-50">
                             {product.recipe && product.recipe.length > 0 ? product.recipe.map((req: any, idx: number) => {
                               const materialItem = adminData.rawMaterials.find(m => m._id === req.ingredientId);
-                              const cost = materialItem ? (materialItem.pricePerUnit * req.qtyPerBottle).toFixed(2) : '0.00';
+                              const cost = materialItem ? (materialItem.marketPrice * req.qtyPerBottle).toFixed(2) : '0.00';
                               return (
                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                                   <td className="px-5 py-3 text-sm font-bold text-slate-800">{req.ingredientName}</td>
@@ -130,7 +130,7 @@ export default function AdminProductsPage() {
                             <p className="font-bold text-slate-800">COGS (Cost to Make): <span className="text-rose-500 font-extrabold">₹{
                               product.recipe.reduce((total: number, req: any) => {
                                 const m = adminData.rawMaterials.find(rm => rm._id === req.ingredientId);
-                                return m ? total + (m.pricePerUnit * req.qtyPerBottle) : total;
+                                return m ? total + (m.marketPrice * req.qtyPerBottle) : total;
                               }, 0).toFixed(2)
                             }</span></p>
                           </div>
@@ -138,7 +138,7 @@ export default function AdminProductsPage() {
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Gross Margin</p>
                             <p className="font-bold text-green-600 text-lg">₹{(product.price - product.recipe.reduce((total: number, req: any) => {
                                 const m = adminData.rawMaterials.find(rm => rm._id === req.ingredientId);
-                                return m ? total + (m.pricePerUnit * req.qtyPerBottle) : total;
+                                return m ? total + (m.marketPrice * req.qtyPerBottle) : total;
                               }, 0)).toFixed(2)}</p>
                           </div>
                         </div>

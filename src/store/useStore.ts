@@ -34,10 +34,10 @@ export interface RawMaterial {
   _id: string;
   name: string;
   unit: string;
-  pricePerUnit: number;
-  currentStock: number;
-  minStockThreshold: number;
-  supplierId: string;
+  marketPrice: number;
+  qtyAvailable: number;
+  minStockLevel: number;
+  supplier?: { _id: string; name: string } | string;
   isActive: boolean;
 }
 
@@ -144,6 +144,7 @@ interface AppStore {
     procurement: any[];
     recipes: any[];
     rawMaterials: RawMaterial[];
+    suppliers: Supplier[];
     stats: any;
   };
   fetchAdminData: (type: 'subscribers' | 'inventory' | 'orders' | 'stats' | 'procurement' | 'recipes') => Promise<void>;
@@ -723,19 +724,25 @@ const useStore = create<AppStore>()(
         ],
         procurement: [],
         recipes: [],
+        suppliers: [
+          { _id: 'sup_1', name: 'Local Greens Co.', contactName: 'John Farmer', phone: '123-456-7890', isActive: true },
+          { _id: 'sup_2', name: 'Orchard Farms', contactName: 'Alice Orchard', phone: '098-765-4321', isActive: true },
+          { _id: 'sup_3', name: 'Spice Importers', contactName: 'Bob Spice', phone: '555-666-7777', isActive: true },
+          { _id: 'sup_4', name: 'Berry Best Farm', contactName: 'Cathy Berry', phone: '111-222-3333', isActive: true },
+        ],
         rawMaterials: [
-          { _id: 'ing_1', name: 'Kale', unit: 'kg', pricePerUnit: 60, currentStock: 2.5, minStockThreshold: 1.5, supplierId: 'sup_1', isActive: true },
-          { _id: 'ing_2', name: 'Spinach', unit: 'kg', pricePerUnit: 40, currentStock: 1.0, minStockThreshold: 2.0, supplierId: 'sup_1', isActive: true },
-          { _id: 'ing_3', name: 'Green Apple', unit: 'kg', pricePerUnit: 120, currentStock: 5.0, minStockThreshold: 3.0, supplierId: 'sup_2', isActive: true },
-          { _id: 'ing_4', name: 'Lemon', unit: 'pcs', pricePerUnit: 5, currentStock: 50, minStockThreshold: 30, supplierId: 'sup_2', isActive: true },
-          { _id: 'ing_5', name: 'Ginger', unit: 'gm', pricePerUnit: 0.3, currentStock: 500, minStockThreshold: 200, supplierId: 'sup_3', isActive: true },
-          { _id: 'ing_6', name: 'Orange', unit: 'kg', pricePerUnit: 80, currentStock: 2.0, minStockThreshold: 4.0, supplierId: 'sup_2', isActive: true },
-          { _id: 'ing_7', name: 'Grapefruit', unit: 'kg', pricePerUnit: 150, currentStock: 1.5, minStockThreshold: 2.0, supplierId: 'sup_2', isActive: true },
-          { _id: 'ing_8', name: 'Turmeric', unit: 'gm', pricePerUnit: 0.4, currentStock: 1000, minStockThreshold: 500, supplierId: 'sup_3', isActive: true },
-          { _id: 'ing_9', name: 'Cayenne', unit: 'gm', pricePerUnit: 0.5, currentStock: 800, minStockThreshold: 300, supplierId: 'sup_3', isActive: true },
-          { _id: 'ing_10', name: 'Beetroot', unit: 'kg', pricePerUnit: 40, currentStock: 10.0, minStockThreshold: 5.0, supplierId: 'sup_4', isActive: true },
-          { _id: 'ing_11', name: 'Blueberry', unit: 'gm', pricePerUnit: 1.2, currentStock: 200, minStockThreshold: 500, supplierId: 'sup_5', isActive: true },
-          { _id: 'ing_12', name: 'Mint', unit: 'bunch', pricePerUnit: 10, currentStock: 15, minStockThreshold: 10, supplierId: 'sup_1', isActive: true }
+          { _id: 'ing_1', name: 'Kale', unit: 'kg', marketPrice: 60, qtyAvailable: 2.5, minStockLevel: 1.5, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_2', name: 'Spinach', unit: 'kg', marketPrice: 40, qtyAvailable: 1.0, minStockLevel: 2.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_3', name: 'Green Apple', unit: 'kg', marketPrice: 120, qtyAvailable: 5.0, minStockLevel: 3.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_4', name: 'Lemon', unit: 'pcs', marketPrice: 5, qtyAvailable: 50, minStockLevel: 30, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_5', name: 'Ginger', unit: 'gm', marketPrice: 0.3, qtyAvailable: 500, minStockLevel: 200, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_6', name: 'Orange', unit: 'kg', marketPrice: 80, qtyAvailable: 2.0, minStockLevel: 4.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_7', name: 'Grapefruit', unit: 'kg', marketPrice: 150, qtyAvailable: 1.5, minStockLevel: 2.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_8', name: 'Turmeric', unit: 'gm', marketPrice: 0.4, qtyAvailable: 1000, minStockLevel: 500, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_9', name: 'Cayenne', unit: 'gm', marketPrice: 0.5, qtyAvailable: 800, minStockLevel: 300, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_10', name: 'Beetroot', unit: 'kg', marketPrice: 40, qtyAvailable: 10.0, minStockLevel: 5.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_11', name: 'Blueberry', unit: 'gm', marketPrice: 1.2, qtyAvailable: 200, minStockLevel: 500, supplier: { _id: 'sup_4', name: 'Berry Best Farm' }, isActive: true },
+          { _id: 'ing_12', name: 'Mint', unit: 'bunch', marketPrice: 10, qtyAvailable: 15, minStockLevel: 10, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true }
         ],
         stats: {
           activeRhythms: 18,

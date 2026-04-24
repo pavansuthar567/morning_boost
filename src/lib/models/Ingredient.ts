@@ -7,6 +7,9 @@ export interface IIngredient extends Document {
   marketPrice: number;
   qtyAvailable: number;
   lastPriceUpdate: Date;
+  supplier?: mongoose.Types.ObjectId;
+  isActive: boolean;
+  minStockLevel: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +22,9 @@ const ingredientSchema = new Schema<IIngredient>(
     marketPrice: { type: Number, default: 0 },
     qtyAvailable: { type: Number, default: 0 },
     lastPriceUpdate: { type: Date, default: Date.now },
+    supplier: { type: Schema.Types.ObjectId, ref: 'Supplier' },
+    isActive: { type: Boolean, default: true },
+    minStockLevel: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
