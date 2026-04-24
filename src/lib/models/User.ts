@@ -17,6 +17,7 @@ export interface IUser extends Document {
   password: string;
   role: 'user' | 'admin' | 'delivery';
   addresses: IAddress[];
+  dietaryPreferences?: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -42,6 +43,7 @@ const userSchema = new Schema<IUser>(
     password: { type: String, required: true },
     role: { type: String, enum: ['user', 'admin', 'delivery'], default: 'user' },
     addresses: [addressSchema],
+    dietaryPreferences: [{ type: String }],
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }

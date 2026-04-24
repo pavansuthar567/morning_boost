@@ -3,15 +3,16 @@
 import { useState } from 'react';
 
 const MOCK_SUBSCRIBERS = [
-  { id: 'SUB-001', name: 'Sarah Jenkins', phone: '9900112233', email: 'sarah@gmail.com', balance: 1250, status: 'active', rhythm: 'Daily', juices: ['Green Vitality', 'Citrus Glow'], joinedAt: 'Mar 15, 2026' },
-  { id: 'SUB-002', name: 'Marcus Chen', phone: '9988776655', email: 'marcus@work.co', balance: 450, status: 'active', rhythm: 'Weekdays', juices: ['Beet Rooted'], joinedAt: 'Mar 22, 2026' },
-  { id: 'SUB-003', name: 'Elena Rodriguez', phone: '9876501234', email: 'elena@design.io', balance: 0, status: 'paused', rhythm: 'Mon/Wed/Fri', juices: ['Green Vitality'], joinedAt: 'Feb 10, 2026' },
-  { id: 'SUB-004', name: 'Sofia Miller', phone: '9123456780', email: 'sofia@design.co', balance: 3400, status: 'active', rhythm: 'Daily', juices: ['Citrus Glow', 'Beet Rooted'], joinedAt: 'Jan 5, 2026' },
-  { id: 'SUB-005', name: 'James Lin', phone: '9871234560', email: 'jlin@software.co', balance: 85, status: 'paused_balance', rhythm: 'Weekdays', juices: ['Green Vitality'], joinedAt: 'Apr 1, 2026' },
+  { id: 'SUB-001', name: 'Sarah Jenkins', phone: '9900112233', email: 'sarah@gmail.com', balance: 1250, status: 'active', rhythm: 'Daily', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Citrus Glow' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Citrus Glow' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Citrus Glow' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 15, 2026', ltv: 12000, address: 'Downtown B-12, Green City', dietaryPreferences: ['No Ginger'] },
+  { id: 'SUB-002', name: 'Marcus Chen', phone: '9988776655', email: 'marcus@work.co', balance: 450, status: 'active', rhythm: 'Weekdays', schedule: [{ day: 'Mon', juice: 'Beet Rooted' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Beet Rooted' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Beet Rooted' }], joinedAt: 'Mar 22, 2026', ltv: 3500, address: 'West Side A-04, Green City', dietaryPreferences: [] },
+  { id: 'SUB-003', name: 'Elena Rodriguez', phone: '9876501234', email: 'elena@design.io', balance: 0, status: 'paused', rhythm: 'Mon/Wed/Fri', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }], joinedAt: 'Feb 10, 2026', ltv: 8500, address: 'North Hills C-09, Green City', dietaryPreferences: ['Vegan'] },
+  { id: 'SUB-004', name: 'Sofia Miller', phone: '9123456780', email: 'sofia@design.co', balance: 3400, status: 'active', rhythm: 'Daily', schedule: [{ day: 'Mon', juice: 'Citrus Glow' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Citrus Glow' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Citrus Glow' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Jan 5, 2026', ltv: 18000, address: 'South Park D-11, Green City', dietaryPreferences: [] },
+  { id: 'SUB-005', name: 'James Lin', phone: '9871234560', email: 'jlin@software.co', balance: 85, status: 'paused_balance', rhythm: 'Weekdays', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }], joinedAt: 'Apr 1, 2026', ltv: 1200, address: 'East End E-22, Green City', dietaryPreferences: ['No Sugar'] },
 ];
 
 export default function AdminSubscribersPage() {
   const [search, setSearch] = useState('');
+  const [selectedSub, setSelectedSub] = useState<typeof MOCK_SUBSCRIBERS[0] | null>(null);
 
   const filtered = MOCK_SUBSCRIBERS.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -40,6 +41,22 @@ export default function AdminSubscribersPage() {
   const totalLiability = MOCK_SUBSCRIBERS.reduce((s, sub) => s + sub.balance, 0);
   const activeCount = MOCK_SUBSCRIBERS.filter(s => s.status === 'active').length;
   const pausedCount = MOCK_SUBSCRIBERS.filter(s => s.status !== 'active').length;
+
+  const handleExportCSV = () => {
+    const headers = ['ID,Name,Phone,Email,Status,Wallet Balance,Joined At,LTV,Dietary Preferences,Schedule'];
+    const rows = filtered.map(s => {
+      const scheduleString = s.schedule.map(item => `${item.day}: ${item.juice}`).join(' | ');
+      return `${s.id},${s.name},${s.phone},${s.email},${s.status},${s.balance},"${s.joinedAt}",${s.ltv},"${s.dietaryPreferences.join(', ')}","${scheduleString}"`;
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `subscribers_list_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <>
@@ -82,7 +99,7 @@ export default function AdminSubscribersPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex justify-between items-center">
           <h3 className="font-headline font-bold text-sm">{filtered.length} subscribers</h3>
-          <button className="text-xs font-bold text-slate-500 flex items-center gap-1 hover:text-primary transition-colors cursor-pointer">
+          <button onClick={handleExportCSV} className="text-xs font-bold text-slate-500 flex items-center gap-1 hover:text-primary transition-colors cursor-pointer">
             <span className="material-symbols-outlined text-sm">download</span> Export
           </button>
         </div>
@@ -91,8 +108,7 @@ export default function AdminSubscribersPage() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Subscriber</th>
-                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Rhythm</th>
-                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Juices</th>
+                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Schedule</th>
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Wallet</th>
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Since</th>
@@ -100,7 +116,7 @@ export default function AdminSubscribersPage() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filtered.map(sub => (
-                <tr key={sub.id} className="hover:bg-slate-50/50 transition-colors">
+                <tr key={sub.id} onClick={() => setSelectedSub(sub)} className="hover:bg-slate-50/50 transition-colors cursor-pointer">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xs">
@@ -112,11 +128,13 @@ export default function AdminSubscribersPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm font-medium text-slate-600">{sub.rhythm}</td>
                   <td className="px-5 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {sub.juices.map((j, i) => (
-                        <span key={i} className="text-[9px] font-bold bg-surface-container text-slate-500 px-2 py-0.5 rounded uppercase tracking-wider">{j}</span>
+                    <div className="flex flex-wrap gap-1 max-w-[350px]">
+                      {sub.schedule.map((item, i) => (
+                        <span key={i} className="text-[9px] font-bold bg-surface-container text-slate-500 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <span className="text-primary">{item.day[0]}</span> 
+                          <span className="font-medium">{item.juice}</span>
+                        </span>
                       ))}
                     </div>
                   </td>
@@ -137,6 +155,102 @@ export default function AdminSubscribersPage() {
           </table>
         </div>
       </div>
+
+      {/* Subscriber Detail Drawer */}
+      {selectedSub && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setSelectedSub(null)}></div>
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                  {selectedSub.name.charAt(0)}
+                </div>
+                <div>
+                  <h2 className="font-headline font-bold text-lg">{selectedSub.name}</h2>
+                  <p className="text-xs text-slate-500">{selectedSub.id}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedSub(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors cursor-pointer">
+                <span className="material-symbols-outlined text-slate-500">close</span>
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              
+              {/* Status & Value */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Status</p>
+                  <span className={`inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full ${statusStyle(selectedSub.status)}`}>
+                      {statusLabel(selectedSub.status)}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Lifetime Value</p>
+                  <p className="text-lg font-headline font-bold text-emerald-600">₹{selectedSub.ltv.toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+
+              {/* Contact Info */}
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 pb-2">Contact & Delivery</h3>
+                <div className="space-y-3">
+                  <div className="flex gap-3 items-center">
+                    <span className="material-symbols-outlined text-slate-400 text-sm">phone</span>
+                    <span className="text-sm font-medium text-slate-700">{selectedSub.phone}</span>
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <span className="material-symbols-outlined text-slate-400 text-sm">mail</span>
+                    <span className="text-sm font-medium text-slate-700">{selectedSub.email}</span>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <span className="material-symbols-outlined text-slate-400 text-sm mt-0.5">location_on</span>
+                    <span className="text-sm font-medium text-slate-700 leading-tight">{selectedSub.address}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dietary Preferences */}
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 pb-2">Dietary Preferences</h3>
+                <div className="flex gap-2 flex-wrap">
+                  {selectedSub.dietaryPreferences.length > 0 ? (
+                    selectedSub.dietaryPreferences.map((pref, i) => (
+                      <span key={i} className="text-xs font-bold bg-rose-50 text-rose-600 px-2.5 py-1 rounded border border-rose-100 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">warning</span>
+                        {pref}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-slate-400">None specified</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Weekly Schedule */}
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 pb-2">Weekly Schedule</h3>
+                <div className="space-y-2">
+                  {selectedSub.schedule.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <span className="text-xs font-bold text-slate-600 uppercase w-10">{item.day}</span>
+                      <span className="text-sm font-medium text-slate-800">{item.juice}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50">
+              <button onClick={() => alert("Edit Subscriber functionality coming soon!")} className="w-full bg-surface-container-highest text-slate-700 py-3.5 rounded-xl font-headline font-bold hover:bg-slate-200 transition-colors cursor-pointer">
+                Edit Subscriber
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

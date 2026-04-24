@@ -1,11 +1,25 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import useStore from "@/store/useStore";
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
     const { logout } = useStore();
+    const pathname = usePathname();
+
+    const getLinkProps = (path: string) => {
+        const isActive = pathname === path || (path !== '/admin-dashboard' && pathname?.startsWith(path));
+        return {
+            href: path,
+            className: isActive 
+                ? "flex items-center gap-3 bg-white dark:bg-slate-900 text-vibrant-orange shadow-sm rounded-xl py-3 px-4 font-headline text-sm font-semibold active:scale-[0.98] transition-all cursor-pointer"
+                : "flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer",
+            iconClass: isActive ? "material-symbols-outlined text-vibrant-orange" : "material-symbols-outlined"
+        };
+    };
+
     return (
         <AuthGuard requiredRole="admin">
             <div className="bg-surface font-body text-on-surface antialiased">
@@ -24,41 +38,41 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                             </div>
                         </div>
                         <nav className="flex-1 space-y-1">
-                            <Link className="flex items-center gap-3 bg-white dark:bg-slate-900 text-vibrant-orange shadow-sm rounded-xl py-3 px-4 font-headline text-sm font-semibold active:scale-[0.98] transition-all cursor-pointer" href="/admin-dashboard">
-                                <span className="material-symbols-outlined text-vibrant-orange">dashboard</span>
+                            <Link {...getLinkProps('/admin-dashboard')} className={getLinkProps('/admin-dashboard').className}>
+                                <span className={getLinkProps('/admin-dashboard').iconClass}>dashboard</span>
                                 <span>Overview</span>
                             </Link>
-                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/subscribers">
-                                <span className="material-symbols-outlined">group</span>
+                            <Link {...getLinkProps('/admin-dashboard/subscribers')} className={getLinkProps('/admin-dashboard/subscribers').className}>
+                                <span className={getLinkProps('/admin-dashboard/subscribers').iconClass}>group</span>
                                 <span>Subscribers</span>
                             </Link>
-                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/runs">
-                                <span className="material-symbols-outlined">local_shipping</span>
+                            <Link {...getLinkProps('/admin-dashboard/runs')} className={getLinkProps('/admin-dashboard/runs').className}>
+                                <span className={getLinkProps('/admin-dashboard/runs').iconClass}>local_shipping</span>
                                 <span>Daily Runs</span>
                             </Link>
-                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/procurement">
-                                <span className="material-symbols-outlined">shopping_cart</span>
+                            <Link {...getLinkProps('/admin-dashboard/procurement')} className={getLinkProps('/admin-dashboard/procurement').className}>
+                                <span className={getLinkProps('/admin-dashboard/procurement').iconClass}>shopping_cart</span>
                                 <span>Procurement</span>
                             </Link>
 
-                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/products">
-                                <span className="material-symbols-outlined">blender</span>
+                            <Link {...getLinkProps('/admin-dashboard/products')} className={getLinkProps('/admin-dashboard/products').className}>
+                                <span className={getLinkProps('/admin-dashboard/products').iconClass}>blender</span>
                                 <span>Products & Recipes</span>
                             </Link>
-                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/raw-materials">
-                                <span className="material-symbols-outlined">grass</span>
+                            <Link {...getLinkProps('/admin-dashboard/raw-materials')} className={getLinkProps('/admin-dashboard/raw-materials').className}>
+                                <span className={getLinkProps('/admin-dashboard/raw-materials').iconClass}>grass</span>
                                 <span>Raw Materials</span>
                             </Link>
-                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/purchases">
-                                <span className="material-symbols-outlined">receipt_long</span>
+                            <Link {...getLinkProps('/admin-dashboard/purchases')} className={getLinkProps('/admin-dashboard/purchases').className}>
+                                <span className={getLinkProps('/admin-dashboard/purchases').iconClass}>receipt_long</span>
                                 <span>Purchase Invoices</span>
                             </Link>
-                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/suppliers">
-                                <span className="material-symbols-outlined">storefront</span>
+                            <Link {...getLinkProps('/admin-dashboard/suppliers')} className={getLinkProps('/admin-dashboard/suppliers').className}>
+                                <span className={getLinkProps('/admin-dashboard/suppliers').iconClass}>storefront</span>
                                 <span>Suppliers</span>
                             </Link>
-                            <Link className="flex items-center gap-3 text-slate-500 dark:text-slate-400 py-3 px-4 hover:translate-x-1 transition-transform font-headline text-sm font-semibold active:scale-[0.98] cursor-pointer" href="/admin-dashboard/settings">
-                                <span className="material-symbols-outlined">settings</span>
+                            <Link {...getLinkProps('/admin-dashboard/settings')} className={getLinkProps('/admin-dashboard/settings').className}>
+                                <span className={getLinkProps('/admin-dashboard/settings').iconClass}>settings</span>
                                 <span>Global Settings</span>
                             </Link>
                         </nav>

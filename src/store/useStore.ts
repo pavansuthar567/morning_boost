@@ -14,6 +14,7 @@ export interface User {
   phone?: string;
   role: 'user' | 'admin' | 'delivery';
   addresses?: any[];
+  dietaryPreferences?: string[];
 }
 
 export interface WalletState {
@@ -186,6 +187,7 @@ interface AppStore {
   // Addresses
   addAddress: (data: any) => Promise<void>;
   removeAddress: (id: string) => Promise<void>;
+  updateDietaryPreferences: (preferences: string[]) => Promise<void>;
 
   isAuthenticated: boolean;
   // Dev
@@ -918,6 +920,29 @@ const useStore = create<AppStore>()(
         }
       },
 
+      updateDietaryPreferences: async (preferences: string[]) => {
+        const { token } = get();
+        if (!token) return;
+        try {
+          const res = await fetch(`${API_URL}/auth/dietary`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ dietaryPreferences: preferences }),
+          });
+          const result = await res.json();
+          if (result.success) {
+            await get().fetchMe();
+          } else {
+            throw new Error(result.error);
+          }
+        } catch (e: any) {
+          throw e;
+        }
+      },
+
       bypassLogin: (role: 'user' | 'admin' = 'admin') => {
         const mockUser = {
           _id: 'mock_id_123',
@@ -932,7 +957,8 @@ const useStore = create<AppStore>()(
             area: 'Localhost',
             pincode: '000000',
             isDefault: true
-          }]
+          }],
+          dietaryPreferences: []
         };
         set({
           user: mockUser as any,

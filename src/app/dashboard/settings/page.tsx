@@ -4,9 +4,49 @@ import React, { useState } from "react";
 import useStore from "@/store/useStore";
 
 export default function SettingsPage() {
-  const { user, addAddress, removeAddress } = useStore();
+  const { user, addAddress, removeAddress, updateDietaryPreferences } = useStore();
   const [isAdding, setIsAdding] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [dietaryPrefs, setDietaryPrefs] = useState<string[]>(user?.dietaryPreferences || []);
+  const [otherDiet, setOtherDiet] = useState('');
+  const [isSavingDiet, setIsSavingDiet] = useState(false);
+
+  const DIETARY_OPTIONS = ['Vegan', 'Keto', 'No Added Sugar', 'Nut Allergy', 'No Ginger'];
+
+  const toggleDiet = (pref: string) => {
+    if (dietaryPrefs.includes(pref)) {
+      setDietaryPrefs(dietaryPrefs.filter(p => p !== pref));
+    } else {
+      setDietaryPrefs([...dietaryPrefs, pref]);
+    }
+  };
+
+  const handleSaveDiet = async () => {
+    setIsSavingDiet(true);
+    try {
+      const allPrefs = [...dietaryPrefs];
+      if (otherDiet.trim()) {
+        allPrefs.push(otherDiet.trim());
+      }
+      // If we are in bypassLogin mock mode, the API call will fail with 404/500 if backend is not fully setup or no token.
+      // But we call the store method.
+      if (user?.role === 'admin' && user?.name === 'Dev Admin') {
+         // Mock saving for dev mode
+         setTimeout(() => {
+           setIsSavingDiet(false);
+           alert("Dietary preferences saved (Dev Mode)!");
+         }, 500);
+      } else {
+        await updateDietaryPreferences(allPrefs);
+        alert("Dietary preferences saved!");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to save preferences");
+    } finally {
+      setIsSavingDiet(false);
+    }
+  };
   
   const [newAddress, setNewAddress] = useState({
     society: '',
@@ -132,6 +172,47 @@ export default function SettingsPage() {
               </div>
             ))
           )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm p-10 mt-12">
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h3 className="font-headline font-extrabold text-2xl tracking-tight">Dietary Preferences</h3>
+            <p className="text-slate-500 mt-2">Let our kitchen know about your allergies or specific diet requirements.</p>
+          </div>
+          <button 
+            onClick={handleSaveDiet}
+            disabled={isSavingDiet}
+            className="juicy-gradient text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-orange-900/10 hover:opacity-90 active:scale-95 transition-all text-xs uppercase tracking-widest cursor-pointer"
+          >
+            {isSavingDiet ? 'Saving...' : 'Save Preferences'}
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          {DIETARY_OPTIONS.map(option => (
+            <label key={option} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${dietaryPrefs.includes(option) ? 'border-orange-600 bg-orange-50/20' : 'border-slate-100 hover:border-orange-200'}`}>
+              <input 
+                type="checkbox" 
+                checked={dietaryPrefs.includes(option)} 
+                onChange={() => toggleDiet(option)}
+                className="rounded text-orange-600 focus:ring-orange-600/20 h-5 w-5"
+              />
+              <span className="font-bold text-slate-700">{option}</span>
+            </label>
+          ))}
+        </div>
+        
+        <div className="mt-6 border-t border-slate-100 pt-6">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Other Allergies / Preferences</label>
+          <input 
+            className="w-full h-14 bg-slate-50 border-none rounded-xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20" 
+            value={otherDiet} 
+            onChange={e => setOtherDiet(e.target.value)} 
+            placeholder="e.g. Allergic to Kiwi, No Mint" 
+            type="text" 
+          />
         </div>
       </div>
 
