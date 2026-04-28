@@ -15,6 +15,7 @@ export interface User {
   role: 'user' | 'admin' | 'delivery';
   addresses?: any[];
   dietaryPreferences?: string[];
+  dietaryNote?: string;
 }
 
 export interface WalletState {
@@ -178,6 +179,10 @@ interface AppStore {
   verifyTopUp: (paymentData: any) => Promise<void>;
 
   // Admin CRUD
+  adminSettings: any;
+  fetchAdminSettings: () => Promise<void>;
+  updateAdminSettings: (data: any) => Promise<void>;
+
   saveProduct: (id: string | null, data: any) => Promise<boolean>;
   deleteProduct: (id: string) => Promise<void>;
   saveIngredient: (id: string | null, data: any) => Promise<void>;
@@ -727,10 +732,10 @@ const useStore = create<AppStore>()(
         procurement: [],
         recipes: [],
         suppliers: [
-          { _id: 'sup_1', name: 'Local Greens Co.', contactName: 'John Farmer', phone: '123-456-7890', isActive: true },
-          { _id: 'sup_2', name: 'Orchard Farms', contactName: 'Alice Orchard', phone: '098-765-4321', isActive: true },
-          { _id: 'sup_3', name: 'Spice Importers', contactName: 'Bob Spice', phone: '555-666-7777', isActive: true },
-          { _id: 'sup_4', name: 'Berry Best Farm', contactName: 'Cathy Berry', phone: '111-222-3333', isActive: true },
+          { _id: 'sup_1', name: 'Local Greens Co.', contactName: 'John Farmer', phone: '123-456-7890', isActive: true, materials: ['ing_1', 'ing_2', 'ing_10', 'ing_12'] },
+          { _id: 'sup_2', name: 'Orchard Farms', contactName: 'Alice Orchard', phone: '098-765-4321', isActive: true, materials: ['ing_3', 'ing_4', 'ing_6', 'ing_7'] },
+          { _id: 'sup_3', name: 'Spice Importers', contactName: 'Bob Spice', phone: '555-666-7777', isActive: true, materials: ['ing_5', 'ing_8', 'ing_9'] },
+          { _id: 'sup_4', name: 'Berry Best Farm', contactName: 'Cathy Berry', phone: '111-222-3333', isActive: true, materials: ['ing_11'] },
         ],
         rawMaterials: [
           { _id: 'ing_1', name: 'Kale', unit: 'kg', marketPrice: 60, qtyAvailable: 2.5, minStockLevel: 1.5, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
@@ -850,6 +855,47 @@ const useStore = create<AppStore>()(
           }
         } catch (e) {
           console.error("Update status failed", e);
+        }
+      },
+
+      // ---- Admin Settings ----
+      adminSettings: null,
+      fetchAdminSettings: async () => {
+        const { token } = get();
+        if (!token) return;
+        try {
+          const res = await fetch(`${API_URL}/admin/settings`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (data.success) {
+            set({ adminSettings: data.settings });
+          }
+        } catch (e) {
+          console.error("Fetch settings failed", e);
+        }
+      },
+      updateAdminSettings: async (payload: any) => {
+        const { token } = get();
+        if (!token) return;
+        try {
+          const res = await fetch(`${API_URL}/admin/settings`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+            set({ adminSettings: data.settings });
+          } else {
+            throw new Error(data.error);
+          }
+        } catch (e) {
+          console.error("Update settings failed", e);
+          throw e;
         }
       },
 

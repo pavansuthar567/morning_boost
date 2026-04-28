@@ -6,6 +6,7 @@ import useStore from '@/store/useStore';
 export default function SuppliersPage() {
   const { token, isLiveMode, adminData } = useStore();
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [ingredients, setIngredients] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -13,30 +14,32 @@ export default function SuppliersPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<any | null>(null);
   const [formData, setFormData] = useState({
-    name: '', contactName: '', phone: '', email: '', address: '', notes: '', isActive: true
+    name: '', contactName: '', phone: '', email: '', address: '', notes: '', isActive: true,
+    materials: [] as string[] // ingredient _ids
   });
 
-  const fetchSuppliers = async () => {
+  const fetchData = async () => {
     if (!isLiveMode) {
       setSuppliers(adminData.suppliers || []);
+      setIngredients(adminData.rawMaterials || []);
       return;
     }
 
     try {
-      const res = await fetch('/api/admin/suppliers', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSuppliers(data.suppliers || []);
-      }
+      const [supRes, ingRes] = await Promise.all([
+        fetch('/api/admin/suppliers', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/ingredients', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const [supData, ingData] = await Promise.all([supRes.json(), ingRes.json()]);
+      if (supData.success) setSuppliers(supData.suppliers || []);
+      if (ingData.success) setIngredients(ingData.ingredients || []);
     } catch (e) {
       console.error(e);
     }
   };
 
   useEffect(() => {
-    fetchSuppliers();
+    fetchData();
   }, [token, isLiveMode]);
 
   const filtered = suppliers.filter(s => 
@@ -54,15 +57,25 @@ export default function SuppliersPage() {
         email: supplier.email || '',
         address: supplier.address || '',
         notes: supplier.notes || '',
-        isActive: supplier.isActive !== undefined ? supplier.isActive : true
+        isActive: supplier.isActive !== undefined ? supplier.isActive : true,
+        materials: (supplier.materials || []).map((m: any) => typeof m === 'string' ? m : m._id || m),
       });
     } else {
       setEditingSupplier(null);
       setFormData({
-        name: '', contactName: '', phone: '', email: '', address: '', notes: '', isActive: true
+        name: '', contactName: '', phone: '', email: '', address: '', notes: '', isActive: true, materials: []
       });
     }
     setIsDrawerOpen(true);
+  };
+
+  const toggleMaterial = (ingId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      materials: prev.materials.includes(ingId)
+        ? prev.materials.filter(id => id !== ingId)
+        : [...prev.materials, ingId]
+    }));
   };
 
   const handleSave = async () => {
@@ -87,7 +100,7 @@ export default function SuppliersPage() {
       
       if (res.ok) {
         setIsDrawerOpen(false);
-        fetchSuppliers();
+        fetchData();
       } else {
         const errorData = await res.json();
         alert(`Error: ${errorData.error}`);
@@ -99,12 +112,22 @@ export default function SuppliersPage() {
     }
   };
 
+  // Get material names for a supplier (for table display)
+  const getMaterialNames = (supplier: any) => {
+    const matIds = (supplier.materials || []).map((m: any) => typeof m === 'string' ? m : m._id || m);
+    if (matIds.length === 0) return '-';
+    return matIds.map((id: string) => {
+      const ing = ingredients.find(i => i._id === id);
+      return ing?.name || '?';
+    }).join(', ');
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-3xl font-headline font-black text-slate-900 tracking-tight">Suppliers</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Manage vendor details, contacts, and statuses.</p>
+          <p className="text-sm text-slate-500 font-medium mt-1">Manage vendors, contacts, and material mappings.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
@@ -117,7 +140,7 @@ export default function SuppliersPage() {
           </div>
           <button 
             onClick={() => openDrawer()}
-            className="bg-vibrant-orange text-white px-5 py-2.5 rounded-full font-headline font-bold text-xs shadow-lg shadow-primary/10 active:scale-95 transition-transform flex items-center gap-2"
+            className="bg-vibrant-orange text-white px-5 py-2.5 rounded-full font-headline font-bold text-xs shadow-lg shadow-primary/10 active:scale-95 transition-transform flex items-center gap-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-sm">add_business</span>
             Add Supplier
@@ -133,6 +156,7 @@ export default function SuppliersPage() {
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Business Name</th>
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Contact Person</th>
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Phone / Email</th>
+                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Materials Provided</th>
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
                 <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
               </tr>
@@ -146,13 +170,16 @@ export default function SuppliersPage() {
                     <div className="text-sm font-bold text-slate-700">{s.phone || '-'}</div>
                     <div className="text-xs text-slate-400">{s.email}</div>
                   </td>
+                  <td className="px-5 py-4 text-xs text-slate-500 max-w-[200px] truncate" title={getMaterialNames(s)}>
+                    {getMaterialNames(s)}
+                  </td>
                   <td className="px-5 py-4">
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider ${s.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
                       {s.isActive ? 'ACTIVE' : 'INACTIVE'}
                     </span>
                   </td>
                   <td className="px-5 py-4 text-right">
-                    <button onClick={() => openDrawer(s)} className="text-primary hover:bg-primary/10 p-2 rounded-xl transition-colors">
+                    <button onClick={() => openDrawer(s)} className="text-primary hover:bg-primary/10 p-2 rounded-xl transition-colors cursor-pointer">
                       <span className="material-symbols-outlined text-sm">edit</span>
                     </button>
                   </td>
@@ -160,7 +187,7 @@ export default function SuppliersPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-slate-400">No suppliers found.</td>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400">No suppliers found.</td>
                 </tr>
               )}
             </tbody>
@@ -175,7 +202,7 @@ export default function SuppliersPage() {
           <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
               <h2 className="font-headline font-extrabold text-xl">{editingSupplier ? 'Edit Supplier' : 'Add Supplier'}</h2>
-              <button onClick={() => setIsDrawerOpen(false)} className="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center">
+              <button onClick={() => setIsDrawerOpen(false)} className="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center cursor-pointer">
                 <span className="material-symbols-outlined text-slate-500">close</span>
               </button>
             </div>
@@ -202,6 +229,37 @@ export default function SuppliersPage() {
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Address</label>
                 <textarea value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 outline-none resize-none h-20" />
               </div>
+
+              {/* Materials Provided */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Materials Provided</label>
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="max-h-48 overflow-y-auto divide-y divide-slate-50">
+                    {ingredients.length > 0 ? ingredients.map((ing: any) => (
+                      <label key={ing._id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={formData.materials.includes(ing._id)}
+                          onChange={() => toggleMaterial(ing._id)}
+                          className="rounded text-vibrant-orange focus:ring-vibrant-orange/20 h-4 w-4"
+                        />
+                        <div className="flex-1 flex items-center justify-between">
+                          <span className="text-sm font-bold text-slate-700">{ing.name}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">{ing.unit}</span>
+                        </div>
+                      </label>
+                    )) : (
+                      <p className="px-4 py-6 text-xs text-slate-400 text-center">No ingredients found. Add raw materials first.</p>
+                    )}
+                  </div>
+                  {formData.materials.length > 0 && (
+                    <div className="px-4 py-2 bg-slate-50 border-t border-slate-200">
+                      <p className="text-[10px] font-bold text-emerald-600">{formData.materials.length} material{formData.materials.length > 1 ? 's' : ''} selected</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Internal Notes</label>
                 <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 outline-none resize-none h-20" />
@@ -218,8 +276,8 @@ export default function SuppliersPage() {
               </div>
             </div>
             <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3">
-              <button onClick={() => setIsDrawerOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-sm text-slate-600 bg-white border border-slate-200 hover:bg-slate-50">Cancel</button>
-              <button disabled={isLoading} onClick={handleSave} className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 hover:bg-slate-900 disabled:opacity-50">
+              <button onClick={() => setIsDrawerOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-sm text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer">Cancel</button>
+              <button disabled={isLoading} onClick={handleSave} className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 hover:bg-slate-900 disabled:opacity-50 cursor-pointer">
                 {isLoading ? 'Saving...' : 'Save Supplier'}
               </button>
             </div>

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
     const body = await req.json();
-    const { name, contactName, phone, email, address, isActive, notes } = body;
+    const { name, contactName, phone, email, address, isActive, notes, materials } = body;
 
     if (!name) {
       return error('Business name is required', 400);
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       phone,
       email,
       address,
+      materials: materials || [],
       isActive: isActive !== undefined ? isActive : true,
       notes
     });

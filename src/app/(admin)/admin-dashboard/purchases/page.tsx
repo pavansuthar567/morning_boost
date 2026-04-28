@@ -25,6 +25,7 @@ export default function PurchasesPage() {
     if (!isLiveMode) {
       // Mock Data
       setIngredients(adminData.rawMaterials);
+      setSuppliers(adminData.suppliers || []);
       setPurchases([
         {
           _id: 'mock_1', invoiceNumber: 'INV-001', supplier: 'Local Greens Co.', date: new Date().toISOString(), totalAmount: 450,
@@ -75,6 +76,23 @@ export default function PurchasesPage() {
   const calculateTotal = () => {
     return items.reduce((sum, item) => sum + (Number(item.pricePaid) || 0), 0);
   };
+
+  // Auto-filter ingredients based on selected supplier's materials
+  const getFilteredIngredients = () => {
+    const selectedSupplier = suppliers.find((s: any) => s._id === formData.supplier);
+    const supplierMaterialIds = (selectedSupplier?.materials || []).map((m: any) => typeof m === 'string' ? m : m._id || m);
+
+    if (supplierMaterialIds.length === 0) return ingredients;
+
+    // Supplier's materials first, then the rest
+    const supplierMats = ingredients.filter((ing: any) => supplierMaterialIds.includes(ing._id));
+    const otherMats = ingredients.filter((ing: any) => !supplierMaterialIds.includes(ing._id));
+    return [...supplierMats, ...otherMats];
+  };
+
+  const filteredIngredients = getFilteredIngredients();
+  const selectedSupplier = suppliers.find((s: any) => s._id === formData.supplier);
+  const supplierMaterialIds = (selectedSupplier?.materials || []).map((m: any) => typeof m === 'string' ? m : m._id || m);
 
   const handleSavePurchase = async () => {
     if (!formData.supplier || items.length === 0) {
@@ -248,8 +266,10 @@ export default function PurchasesPage() {
                           className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none"
                         >
                           <option value="">Select...</option>
-                          {ingredients.map(ing => (
-                            <option key={ing._id} value={ing._id}>{ing.name} ({ing.unit})</option>
+                          {filteredIngredients.map(ing => (
+                            <option key={ing._id} value={ing._id}>
+                              {supplierMaterialIds.includes(ing._id) ? '★ ' : ''}{ing.name} ({ing.unit})
+                            </option>
                           ))}
                         </select>
                       </div>

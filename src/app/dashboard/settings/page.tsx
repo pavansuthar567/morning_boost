@@ -9,7 +9,7 @@ export default function SettingsPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [dietaryPrefs, setDietaryPrefs] = useState<string[]>(user?.dietaryPreferences || []);
-  const [otherDiet, setOtherDiet] = useState('');
+  const [dietaryNote, setDietaryNote] = useState(user?.dietaryNote || '');
   const [isSavingDiet, setIsSavingDiet] = useState(false);
 
   const DIETARY_OPTIONS = ['Vegan', 'Keto', 'No Added Sugar', 'Nut Allergy', 'No Ginger'];
@@ -26,9 +26,7 @@ export default function SettingsPage() {
     setIsSavingDiet(true);
     try {
       const allPrefs = [...dietaryPrefs];
-      if (otherDiet.trim()) {
-        allPrefs.push(otherDiet.trim());
-      }
+      // dietaryNote is saved separately via the same API
       // If we are in bypassLogin mock mode, the API call will fail with 404/500 if backend is not fully setup or no token.
       // But we call the store method.
       if (user?.role === 'admin' && user?.name === 'Dev Admin') {
@@ -205,12 +203,12 @@ export default function SettingsPage() {
         </div>
         
         <div className="mt-6 border-t border-slate-100 pt-6">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Other Allergies / Preferences</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Additional Note / Allergies</label>
           <input 
             className="w-full h-14 bg-slate-50 border-none rounded-xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20" 
-            value={otherDiet} 
-            onChange={e => setOtherDiet(e.target.value)} 
-            placeholder="e.g. Allergic to Kiwi, No Mint" 
+            value={dietaryNote} 
+            onChange={e => setDietaryNote(e.target.value)} 
+            placeholder="e.g. Allergic to Kiwi, Mild allergy to raw ginger" 
             type="text" 
           />
         </div>

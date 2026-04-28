@@ -18,6 +18,8 @@ export interface IUser extends Document {
   role: 'user' | 'admin' | 'delivery';
   addresses: IAddress[];
   dietaryPreferences?: string[];
+  dietaryNote?: string;
+  subscriberId?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -44,10 +46,20 @@ const userSchema = new Schema<IUser>(
     role: { type: String, enum: ['user', 'admin', 'delivery'], default: 'user' },
     addresses: [addressSchema],
     dietaryPreferences: [{ type: String }],
+    dietaryNote: { type: String, default: '' },
+    subscriberId: { type: String, unique: true, sparse: true },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
+
+// Auto-generate subscriberId for new users with 'user' role
+userSchema.pre('save', async function () {
+  if (this.isNew && this.role === 'user' && !this.subscriberId) {
+    const count = await mongoose.models.User?.countDocuments({ subscriberId: { $exists: true, $ne: null } }) || 0;
+    this.subscriberId = `SUB-${String(count + 1).padStart(3, '0')}`;
+  }
+});
 
 // Don't return password in JSON
 userSchema.methods.toJSON = function () {

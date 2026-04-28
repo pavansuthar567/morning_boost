@@ -6,6 +6,7 @@ export interface ISupplier extends Document {
   phone?: string;
   email?: string;
   address?: string;
+  materials: mongoose.Types.ObjectId[]; // Ingredients this supplier provides
   isActive: boolean;
   notes?: string;
   createdAt: Date;
@@ -19,6 +20,7 @@ const supplierSchema = new Schema<ISupplier>(
     phone: { type: String },
     email: { type: String },
     address: { type: String },
+    materials: [{ type: Schema.Types.ObjectId, ref: 'Ingredient' }],
     isActive: { type: Boolean, default: true },
     notes: { type: String },
   },
