@@ -4,12 +4,12 @@ import React, { useState } from "react";
 import useStore from "@/store/useStore";
 
 export default function SettingsPage() {
-  const { user, addAddress, removeAddress, updateDietaryPreferences } = useStore();
+  const { user, subscription, addAddress, removeAddress, updateDietaryPreferences } = useStore();
   const [isAdding, setIsAdding] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const [dietaryPrefs, setDietaryPrefs] = useState<string[]>(user?.dietaryPreferences || []);
-  const [dietaryNote, setDietaryNote] = useState(user?.dietaryNote || '');
+  const [dietaryPrefs, setDietaryPrefs] = useState<string[]>(subscription?.dietaryPreferences || []);
+  const [dietaryNote, setDietaryNote] = useState(subscription?.dietaryNote || '');
   const [isSavingDiet, setIsSavingDiet] = useState(false);
 
   const DIETARY_OPTIONS = ['Vegan', 'Keto', 'No Added Sugar', 'Nut Allergy', 'No Ginger'];

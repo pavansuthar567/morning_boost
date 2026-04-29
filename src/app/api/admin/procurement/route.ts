@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     const recipes = await Recipe.find({ _id: { $in: recipeIds } })
       .populate('ingredients.ingredient', 'name unit category marketPrice qtyAvailable');
 
-    const ingredientNeeds: Record<string, { name: string; unit: string; needed: number; available: number; shortfall: number; cost: number }> = {};
+    const detailedList: Array<{ ingredient: string; unit: string; qtyNeeded: number; pricePerUnit: number; forProduct: string; bottles: number; currentStock: number }> = [];
 
     for (const product of products) {
       if (!product.recipe) continue;
@@ -57,25 +57,23 @@ export async function GET(req: NextRequest) {
 
       for (const ri of recipe.ingredients) {
         const ing = ri.ingredient as unknown as { _id: { toString: () => string }; name: string; unit: string; qtyAvailable: number; marketPrice: number };
-        const ingId = ing._id.toString();
-        if (!ingredientNeeds[ingId]) {
-          ingredientNeeds[ingId] = { name: ing.name, unit: ing.unit, needed: 0, available: ing.qtyAvailable, shortfall: 0, cost: 0 };
-        }
-        ingredientNeeds[ingId].needed += ri.quantity * count;
+        
+        detailedList.push({
+          ingredient: ing.name,
+          unit: ing.unit,
+          qtyNeeded: ri.quantity * count,
+          pricePerUnit: ing.marketPrice || 0,
+          forProduct: product.name,
+          bottles: count,
+          currentStock: ing.qtyAvailable || 0,
+        });
       }
-    }
-
-    // Calculate shortfalls
-    for (const key of Object.keys(ingredientNeeds)) {
-      const item = ingredientNeeds[key];
-      item.shortfall = Math.max(0, item.needed - item.available);
     }
 
     return ok({
       date: startOfDay.toISOString().split('T')[0],
       totalOrders: orders.length,
-      productBreakdown: Object.values(productCounts),
-      ingredients: Object.values(ingredientNeeds),
+      detailedList,
     });
   } catch (err: unknown) {
     console.error('Procurement error:', err);

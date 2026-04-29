@@ -62,11 +62,15 @@ export async function POST(req: NextRequest) {
         // Calculate new market price using Weighted Average Cost (WAC)
         // WAC = [(Old Qty * Old Price) + (New Qty * New Price)] / (Old Qty + New Qty)
         const unitPrice = item.pricePaid / item.quantity;
-        const oldTotalValue = ingredient.qtyAvailable * ingredient.marketPrice;
-        const newTotalValue = item.quantity * unitPrice;
-        const newQtyAvailable = ingredient.qtyAvailable + item.quantity;
         
-        const weightedAveragePrice = (oldTotalValue + newTotalValue) / newQtyAvailable;
+        let weightedAveragePrice = unitPrice; // default to new price if no existing stock
+        const newQtyAvailable = ingredient.qtyAvailable + item.quantity;
+
+        if (ingredient.qtyAvailable > 0) {
+          const oldTotalValue = ingredient.qtyAvailable * ingredient.marketPrice;
+          const newTotalValue = item.quantity * unitPrice;
+          weightedAveragePrice = (oldTotalValue + newTotalValue) / newQtyAvailable;
+        }
         
         ingredient.qtyAvailable = newQtyAvailable;
         ingredient.marketPrice = weightedAveragePrice;

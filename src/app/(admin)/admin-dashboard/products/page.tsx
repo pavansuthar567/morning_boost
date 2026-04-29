@@ -1,14 +1,64 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useStore from '@/store/useStore';
 
 const CATEGORIES = ['Immunity', 'Energy', 'Cleanse', 'Detox', 'Wellness'];
 
 export default function AdminProductsPage() {
-  const { adminData } = useStore();
+  const { token, isLiveMode, adminData } = useStore();
   const [search, setSearch] = useState('');
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [ingredients, setIngredients] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      if (!isLiveMode) {
+        setProducts(adminData.inventory || []);
+        setIngredients(adminData.rawMaterials || []);
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const [prodRes, ingRes] = await Promise.all([
+          fetch('/api/admin/products', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/admin/ingredients', { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        const prodData = await prodRes.json();
+        const ingData = await ingRes.json();
+        
+        if (prodData.success) {
+          // Normalize recipe structure to match frontend expectations
+          const normalizedProducts = (prodData.products || []).map((p: any) => {
+            if (p.recipe && p.recipe.ingredients) {
+              return {
+                ...p,
+                recipeInstructions: (p.recipe.instructions || '').split('\n').filter(Boolean),
+                recipe: p.recipe.ingredients.map((ri: any) => ({
+                  ingredientId: ri.ingredient?._id,
+                  ingredientName: ri.ingredient?.name,
+                  unit: ri.ingredient?.unit,
+                  qtyPerBottle: ri.quantity,
+                  marketPrice: ri.ingredient?.marketPrice || 0
+                }))
+              };
+            }
+            return p;
+          });
+          setProducts(normalizedProducts);
+        }
+        if (ingData.success) setIngredients(ingData.ingredients || []);
+      } catch (err) {
+        console.error('Failed to fetch data', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [token, isLiveMode]);
 
   // Drawer / Form State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -19,13 +69,14 @@ export default function AdminProductsPage() {
     price: 0,
     isActive: true,
     image: '',
+    recipeId: '', // To keep track if updating an existing recipe
     recipe: [] as { ingredientId: string; qtyPerBottle: number }[],
     recipeInstructions: [] as string[]
   });
 
-  const filtered = adminData.inventory.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase())
+  const filtered = products.filter(p =>
+    p.name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.category?.toLowerCase().includes(search.toLowerCase())
   );
 
   const openAdd = () => {
@@ -36,6 +87,7 @@ export default function AdminProductsPage() {
       price: 0,
       isActive: true,
       image: 'https://images.unsplash.com/photo-1610970881699-44a55b4cf703?w=500&q=80',
+      recipeId: '',
       recipe: [],
       recipeInstructions: []
     });
@@ -50,8 +102,9 @@ export default function AdminProductsPage() {
       price: product.price,
       isActive: product.isActive,
       image: product.image,
-      recipe: product.recipe?.map((r: any) => ({ ingredientId: r.ingredientId, qtyPerBottle: r.qtyPerBottle })) || [],
-      recipeInstructions: product.recipeInstructions || []
+      recipeId: product.recipe?._id || '',
+      recipe: Array.isArray(product.recipe) ? product.recipe.map((r: any) => ({ ingredientId: r.ingredientId, qtyPerBottle: r.qtyPerBottle })) : [],
+      recipeInstructions: Array.isArray(product.recipeInstructions) ? product.recipeInstructions : []
     });
     setIsDrawerOpen(true);
   };
@@ -61,7 +114,7 @@ export default function AdminProductsPage() {
   const addRecipeRow = () => {
     setFormData({
       ...formData,
-      recipe: [...formData.recipe, { ingredientId: adminData.rawMaterials[0]?._id || '', qtyPerBottle: 0 }]
+      recipe: [...formData.recipe, { ingredientId: ingredients[0]?._id || '', qtyPerBottle: 0 }]
     });
   };
 
@@ -96,9 +149,84 @@ export default function AdminProductsPage() {
     setFormData({ ...formData, recipeInstructions: newSteps });
   };
 
-  const handleSave = () => {
-    alert(editingId ? 'Product Updated! (Live backend integration pending)' : 'Product Added! (Live backend integration pending)');
-    setIsDrawerOpen(false);
+  const handleSave = async () => {
+    if (!formData.name || formData.price <= 0) {
+      return alert('Name and a valid price are required.');
+    }
+
+    if (!isLiveMode) {
+      alert("Mock Data Mode: Edits are read-only locally. Enable Live Mode in Settings to save.");
+      setIsDrawerOpen(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let finalRecipeId = formData.recipeId;
+
+      // 1. If there's recipe data, save/update the Recipe first
+      if (formData.recipe.length > 0) {
+        const recipePayload = {
+          name: `${formData.name} Recipe`,
+          ingredients: formData.recipe.map(r => ({ ingredient: r.ingredientId, quantity: Number(r.qtyPerBottle) })),
+          instructions: formData.recipeInstructions.join('\n'),
+          yieldAmount: 1 // hardcoded to 1 bottle yield for now as per UI
+        };
+
+        const rMethod = finalRecipeId ? 'PATCH' : 'POST';
+        const rUrl = finalRecipeId ? `/api/admin/recipes/${finalRecipeId}` : '/api/admin/recipes';
+        
+        const rRes = await fetch(rUrl, {
+          method: rMethod,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(recipePayload)
+        });
+        
+        const rData = await rRes.json();
+        if (rData.success) {
+          finalRecipeId = rData.recipe._id;
+        } else {
+          alert(`Recipe Error: ${rData.error}`);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 2. Save/Update the Product
+      const productPayload = {
+        name: formData.name,
+        category: formData.category,
+        price: Number(formData.price),
+        isActive: formData.isActive,
+        image: formData.image,
+        recipe: finalRecipeId || undefined
+      };
+
+      const pMethod = editingId ? 'PATCH' : 'POST';
+      const pUrl = editingId ? `/api/admin/products/${editingId}` : '/api/admin/products';
+
+      const pRes = await fetch(pUrl, {
+        method: pMethod,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(productPayload)
+      });
+
+      if (pRes.ok) {
+        setIsDrawerOpen(false);
+        // Refresh products
+        const res = await fetch('/api/admin/products', { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        if (data.success) setProducts(data.products || []);
+      } else {
+        const pData = await pRes.json();
+        alert(`Product Error: ${pData.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while saving.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -126,13 +254,30 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      <div className="space-y-6">
-        {filtered.map(product => {
-          const isExpanded = expandedRecipe === product._id;
+      {isLoading ? (
+        <div className="space-y-6">
+          {[1, 2, 3].map((skeleton) => (
+            <div key={skeleton} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex items-center gap-4 animate-pulse">
+              <div className="w-16 h-16 rounded-xl bg-slate-200"></div>
+              <div className="flex-1 space-y-3">
+                <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-24 h-8 bg-slate-200 rounded-xl"></div>
+                <div className="w-28 h-8 bg-slate-200 rounded-xl"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {filtered.map(product => {
+            const isExpanded = expandedRecipe === product._id;
 
-          return (
-            <div key={product._id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              {/* Product Header Row */}
+            return (
+              <div key={product._id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                {/* Product Header Row */}
               <div className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/20">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface-container border border-slate-100">
@@ -192,12 +337,12 @@ export default function AdminProductsPage() {
                           </thead>
                           <tbody className="divide-y divide-slate-50">
                             {product.recipe && product.recipe.length > 0 ? product.recipe.map((req: any, idx: number) => {
-                              const materialItem = adminData.rawMaterials.find(m => m._id === req.ingredientId);
+                              const materialItem = ingredients.find(m => m._id === req.ingredientId);
                               const cost = materialItem ? (materialItem.marketPrice * req.qtyPerBottle).toFixed(2) : '0.00';
                               return (
                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                  <td className="px-5 py-3 text-sm font-bold text-slate-800">{req.ingredientName}</td>
-                                  <td className="px-5 py-3 text-sm font-medium text-slate-600">{req.qtyPerBottle} <span className="text-xs text-slate-400">{req.unit}</span></td>
+                                  <td className="px-5 py-3 text-sm font-bold text-slate-800">{req.ingredientName || materialItem?.name}</td>
+                                  <td className="px-5 py-3 text-sm font-medium text-slate-600">{req.qtyPerBottle} <span className="text-xs text-slate-400">{req.unit || materialItem?.unit}</span></td>
                                   <td className="px-5 py-3 text-sm font-bold text-slate-600">₹{cost}</td>
                                 </tr>
                               );
@@ -217,7 +362,7 @@ export default function AdminProductsPage() {
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Financials</p>
                             <p className="font-bold text-slate-800">COGS (Cost to Make): <span className="text-rose-500 font-extrabold">₹{
                               product.recipe.reduce((total: number, req: any) => {
-                                const m = adminData.rawMaterials.find(rm => rm._id === req.ingredientId);
+                                const m = ingredients.find(rm => rm._id === req.ingredientId);
                                 return m ? total + (m.marketPrice * req.qtyPerBottle) : total;
                               }, 0).toFixed(2)
                             }</span></p>
@@ -225,7 +370,7 @@ export default function AdminProductsPage() {
                           <div className="text-right">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Gross Margin</p>
                             <p className="font-bold text-green-600 text-lg">₹{(product.price - product.recipe.reduce((total: number, req: any) => {
-                              const m = adminData.rawMaterials.find(rm => rm._id === req.ingredientId);
+                              const m = ingredients.find(rm => rm._id === req.ingredientId);
                               return m ? total + (m.marketPrice * req.qtyPerBottle) : total;
                             }, 0)).toFixed(2)}</p>
                           </div>
@@ -250,8 +395,10 @@ export default function AdminProductsPage() {
                           <div className="space-y-3">
                             {product.recipeInstructions.map((step: string, idx: number) => (
                               <div key={idx} className="flex gap-3 text-sm text-slate-600">
-                                <span className="text-primary font-bold">{step.split('.')[0]}.</span>
-                                <span>{step.substring(step.indexOf('.') + 1).trim()}</span>
+                                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center mt-0.5 shrink-0">
+                                  {idx + 1}
+                                </span>
+                                <span className="leading-relaxed">{step}</span>
                               </div>
                             ))}
                           </div>
@@ -266,7 +413,13 @@ export default function AdminProductsPage() {
             </div>
           );
         })}
-      </div>
+        {filtered.length === 0 && (
+          <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+            <p className="text-sm font-bold text-slate-400">No products found matching your search.</p>
+          </div>
+        )}
+        </div>
+      )}
 
       {/* Side Drawer for Add/Edit */}
       {isDrawerOpen && (
@@ -360,7 +513,7 @@ export default function AdminProductsPage() {
 
                 <div className="space-y-3">
                   {formData.recipe.map((row, idx) => {
-                    const material = adminData.rawMaterials.find(m => m._id === row.ingredientId);
+                    const material = ingredients.find(m => m._id === row.ingredientId);
                     return (
                       <div key={idx} className="flex gap-3 items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <div className="flex-1">
@@ -369,7 +522,7 @@ export default function AdminProductsPage() {
                             onChange={e => updateRecipeRow(idx, 'ingredientId', e.target.value)}
                             className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold"
                           >
-                            {adminData.rawMaterials.map(m => (
+                            {ingredients.map(m => (
                               <option key={m._id} value={m._id}>{m.name}</option>
                             ))}
                           </select>

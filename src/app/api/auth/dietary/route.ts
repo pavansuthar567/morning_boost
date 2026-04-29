@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/lib/db';
-import User from '@/lib/models/User';
+import Subscription from '@/lib/models/Subscription';
 import { authenticate, isAuthError, ok, error } from '@/lib/middleware';
 
 // Update dietary preferences
@@ -17,13 +17,17 @@ export async function PATCH(req: NextRequest) {
       return error('dietaryPreferences must be an array of strings');
     }
 
-    const user = await User.findById(auth.userId);
-    if (!user) return error('User not found', 404);
+    const subscription = await Subscription.findOne({
+      user: auth.userId,
+      status: { $in: ['active', 'paused', 'paused_balance'] }
+    });
 
-    user.dietaryPreferences = dietaryPreferences;
-    await user.save();
+    if (!subscription) return error('Active subscription not found', 404);
 
-    return ok({ user: user.toJSON() });
+    subscription.dietaryPreferences = dietaryPreferences;
+    await subscription.save();
+
+    return ok({ subscription });
   } catch (err: unknown) {
     console.error('Update dietary preferences error:', err);
     return error('Failed to update dietary preferences', 500);

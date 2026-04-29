@@ -14,8 +14,6 @@ export interface User {
   phone?: string;
   role: 'user' | 'admin' | 'delivery';
   addresses?: any[];
-  dietaryPreferences?: string[];
-  dietaryNote?: string;
 }
 
 export interface WalletState {
@@ -82,6 +80,8 @@ export interface Subscription {
   deliveryAddress: string;
   timeSlot: string;
   status: 'active' | 'paused' | 'paused_balance' | 'cancelled';
+  dietaryPreferences?: string[];
+  dietaryNote?: string;
 }
 
 export interface Order {
@@ -653,10 +653,10 @@ const useStore = create<AppStore>()(
               { ingredientId: 'ing_5', ingredientName: 'Ginger', qtyPerBottle: 25, unit: 'gm' },
             ],
             recipeInstructions: [
-              '1. Wash the kale and spinach thoroughly in cold water.',
-              '2. Juice the green apples and lemon first to extract base liquids.',
-              '3. Slowly process the leafy greens, followed by the ginger.',
-              '4. Strain to remove micro-fibers for a smooth texture.'
+              'Wash the kale and spinach thoroughly in cold water.',
+              'Juice the green apples and lemon first to extract base liquids.',
+              'Slowly process the leafy greens, followed by the ginger.',
+              'Strain to remove micro-fibers for a smooth texture.'
             ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1QuAZLQgXCBHxy0BcEKhRglzerfWWC-1vPn7NXZciyOqV_MZgInCEWjivoDmzw_XLtny0YeXfJoFb7zrHBi3BTX-8QVbJRBdjeAPbKJnhIZLPQXlrJ4kUlrFihd_qCx4lbucJ6uXSk0tXYwFuQb2-gr_4zjfE1XZ-0Bf5AoVu12NBnleBwT9AbcdsNO2bzPcNzX8rEN4tdP6e14o9wZrdNAnKYZPERcoTEOnO32z3afdKSme0XJXKoEMDo-gB7Byc5EnnQIwmZwc',
           },
@@ -677,10 +677,10 @@ const useStore = create<AppStore>()(
               { ingredientId: 'ing_9', ingredientName: 'Cayenne', qtyPerBottle: 5, unit: 'gm' },
             ],
             recipeInstructions: [
-              '1. Peel all citrus fruits (Orange & Grapefruit), leaving minor pith for antioxidants.',
-              '2. Juice the citrus fruits to yield a vibrant base.',
-              '3. Whisk in turmeric powder and cayenne precisely to prevent clumping.',
-              '4. Bottle immediately to prevent Vitamin C oxidation.'
+              'Peel all citrus fruits (Orange & Grapefruit), leaving minor pith for antioxidants.',
+              'Juice the citrus fruits to yield a vibrant base.',
+              'Whisk in turmeric powder and cayenne precisely to prevent clumping.',
+              'Bottle immediately to prevent Vitamin C oxidation.'
             ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBbA9CAicGuI3_qnblBkoS5JUaLGJiLMkMgWW-UhG8AGeY2G4HAMMHz2LmIpvAX8BD2ZC0GqHCeI0iY5ostmkp69mQheBa86_T9N-QhcOXWjJfkZblGf7Xk0L3yIPlpqysdbQIXRcR3g6GPrg7JlWwAHm-wR9AoJOCCirdtxNpCLmHdH20oQ6n2njZ0YxCLDAk1_zkwHS5VKKAzyxxFvxwAfoqCPI5jgkulkKw6ePnVabZrU_A5T1CQ9jRnJXF0Dq27zR1n7e3oPdU',
           },
@@ -701,10 +701,10 @@ const useStore = create<AppStore>()(
               { ingredientId: 'ing_12', ingredientName: 'Mint', qtyPerBottle: 1, unit: 'bunch' },
             ],
             recipeInstructions: [
-              '1. Trim and vigorously scrub the beetroots to remove dirt.',
-              '2. Process apples and beetroots through the heavy press.',
-              '3. Crush the blueberries alongside the mint for infused flavor.',
-              '4. Mix well. Ensure deep red hue without separation.'
+              'Trim and vigorously scrub the beetroots to remove dirt.',
+              'Process apples and beetroots through the heavy press.',
+              'Crush the blueberries alongside the mint for infused flavor.',
+              'Mix well. Ensure deep red hue without separation.'
             ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIrfiBzFWaXV4otHis8tCw4zQvYiuhbSV-LBjN1kSlQTzUDlDFg4gW1vjSDrpxjNh_YAIgmwhL0skxCoTSyL5OFVN3as4AR_fFgJoWIHnBgC6WfJmRkgVGEnpBIfabjNRsPPVQ2qMrBM2dMcfJ_JsS2_kkT9FOQ_Kv8lAG6KcGMHgljGIoUuqyineCTxBz-1fX8JtkmvScLUQt9ha9RmprJbTCrMCZQpO8SvsRnT7dnU5Y_KAbefSPmtlhYqohE1lWjUmpnjvasf8',
           },
@@ -732,8 +732,8 @@ const useStore = create<AppStore>()(
         procurement: [],
         recipes: [],
         suppliers: [
-          { _id: 'sup_1', name: 'Local Greens Co.', contactName: 'John Farmer', phone: '123-456-7890', isActive: true, materials: ['ing_1', 'ing_2', 'ing_10', 'ing_12'] },
-          { _id: 'sup_2', name: 'Orchard Farms', contactName: 'Alice Orchard', phone: '098-765-4321', isActive: true, materials: ['ing_3', 'ing_4', 'ing_6', 'ing_7'] },
+          { _id: 'sup_1', name: 'Local Greens Co.', contactName: 'John Farmer', phone: '123-456-7890', isActive: true, materials: ['ing_1', 'ing_2', 'ing_3', 'ing_5', 'ing_10', 'ing_12'] },
+          { _id: 'sup_2', name: 'Orchard Farms', contactName: 'Alice Orchard', phone: '098-765-4321', isActive: true, materials: ['ing_3', 'ing_4', 'ing_6', 'ing_7', 'ing_10'] },
           { _id: 'sup_3', name: 'Spice Importers', contactName: 'Bob Spice', phone: '555-666-7777', isActive: true, materials: ['ing_5', 'ing_8', 'ing_9'] },
           { _id: 'sup_4', name: 'Berry Best Farm', contactName: 'Cathy Berry', phone: '111-222-3333', isActive: true, materials: ['ing_11'] },
         ],
@@ -1003,8 +1003,7 @@ const useStore = create<AppStore>()(
             area: 'Localhost',
             pincode: '000000',
             isDefault: true
-          }],
-          dietaryPreferences: []
+          }]
         };
         set({
           user: mockUser as any,

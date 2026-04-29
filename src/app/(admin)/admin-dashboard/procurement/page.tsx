@@ -1,5 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import useStore from '@/store/useStore';
+
 const MOCK_PROCUREMENT = [
   { ingredient: 'Kale', unit: 'kg', qtyNeeded: 2.4, pricePerUnit: 60, forProduct: 'Green Vitality', bottles: 8, currentStock: 1.5 },
   { ingredient: 'Spinach', unit: 'kg', qtyNeeded: 1.6, pricePerUnit: 40, forProduct: 'Green Vitality', bottles: 8, currentStock: 0.5 },
@@ -16,8 +19,39 @@ const MOCK_PROCUREMENT = [
 ];
 
 export default function AdminProcurementPage() {
+  const { token, isLiveMode } = useStore();
+  const [procurementList, setProcurementList] = useState<typeof MOCK_PROCUREMENT>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProcurement = async () => {
+      setIsLoading(true);
+      if (!isLiveMode) {
+        setProcurementList(MOCK_PROCUREMENT);
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/procurement', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.detailedList) {
+          setProcurementList(data.detailedList);
+        } else {
+          setProcurementList([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch procurement data', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProcurement();
+  }, [token, isLiveMode]);
+
   // Group by product for detailed view
-  const groupedByProduct = MOCK_PROCUREMENT.reduce((acc, item) => {
+  const groupedByProduct = procurementList.reduce((acc, item) => {
     if (!acc[item.forProduct]) acc[item.forProduct] = [];
     acc[item.forProduct].push(item);
     return acc;
@@ -25,7 +59,7 @@ export default function AdminProcurementPage() {
 
   // Aggregate master list by ingredient
   const aggregatedItems = Object.values(
-    MOCK_PROCUREMENT.reduce((acc, item) => {
+    procurementList.reduce((acc, item) => {
       // For Apple vs Green Apple, we treat them as unique names.
       if (!acc[item.ingredient]) {
         acc[item.ingredient] = {

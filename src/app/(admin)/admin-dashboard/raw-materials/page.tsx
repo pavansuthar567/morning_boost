@@ -66,6 +66,14 @@ export default function AdminRawMaterialsPage() {
   );
   const totalInventoryValue = filtered.reduce((sum, item) => sum + ((item.marketPrice || 0) * (item.qtyAvailable || 0)), 0);
 
+  // Find all suppliers that provide a given material
+  const getSuppliersForMaterial = (matId: string) => {
+    return suppliers.filter((s: any) => {
+      const matIds = (s.materials || []).map((m: any) => typeof m === 'string' ? m : m._id || m);
+      return matIds.includes(matId);
+    });
+  };
+
   // Form Handlers
   const openDrawer = (material?: any) => {
     if (material) {
@@ -268,7 +276,49 @@ export default function AdminRawMaterialsPage() {
                       <span className="text-xs text-slate-400 ml-1">{mat.unit}</span>
                     </td>
                     <td className="px-5 py-4 text-sm text-slate-600">
-                      {mat.supplier?.name || '-'}
+                      {(() => {
+                        const primaryName = mat.supplier?.name || '-';
+                        const allSuppliers = getSuppliersForMaterial(mat._id);
+                        const otherCount = allSuppliers.length > 0 ? allSuppliers.length - (mat.supplier ? 1 : 0) : 0;
+                        
+                        // Sort so primary supplier is always at the top
+                        const sortedSuppliers = [...allSuppliers].sort((a, b) => {
+                          if (a._id === mat.supplier?._id) return -1;
+                          if (b._id === mat.supplier?._id) return 1;
+                          return 0;
+                        });
+
+                        return (
+                          <div className="relative group/sup">
+                            <div className="flex items-center gap-2">
+                              <span>{primaryName}</span>
+                              {otherCount > 0 && (
+                                <span className="px-1.5 py-0.5 text-[9px] font-black bg-primary/10 text-primary rounded-full cursor-pointer hover:bg-primary/20 transition-colors">
+                                  +{otherCount}
+                                </span>
+                              )}
+                            </div>
+                            {allSuppliers.length > 1 && (
+                              <div className="absolute left-0 top-full mt-1 z-30 hidden group-hover/sup:block">
+                                <div className="bg-slate-900 rounded-md shadow-xl p-3 min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">All Suppliers</p>
+                                  <div className="space-y-1.5">
+                                    {sortedSuppliers.map((s: any) => (
+                                      <div key={s._id} className="flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-xs text-primary">storefront</span>
+                                        <span className="text-xs font-bold text-white">{s.name}</span>
+                                        {s._id === mat.supplier?._id && (
+                                          <span className="text-[8px] font-black bg-primary/20 text-primary px-1.5 py-0.5 rounded-full uppercase">Primary</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-4">
                       <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full ${mat.isActive ? 'bg-slate-100 text-slate-600' : 'bg-slate-200 text-slate-400'}`}>
