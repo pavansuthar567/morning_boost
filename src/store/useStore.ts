@@ -197,6 +197,19 @@ interface AppStore {
   isAuthenticated: boolean;
   // Dev
   bypassLogin: (role?: 'user' | 'admin') => void;
+
+  // Configuration & Constants
+  config: {
+    juiceOptions: string[];
+    dietOptions: string[];
+  };
+
+  // Demo Data (Mock)
+  mockSubscribers: any[];
+  mockRuns: any[];
+  mockProcurement: any[];
+  mockInventory: any[];
+  mockPurchases: any[];
 }
 
 const useStore = create<AppStore>()(
@@ -207,6 +220,56 @@ const useStore = create<AppStore>()(
       setIsBackendConnected: (connected) => set({ isBackendConnected: connected }),
       isLiveMode: false,
       setIsLiveMode: (live) => set({ isLiveMode: live }),
+
+      // ---- Config & Constants ----
+      config: {
+        juiceOptions: ['Green Vitality', 'Citrus Glow', 'Beet Rooted'],
+        dietOptions: ['Vegan', 'No Ginger', 'No Sugar', 'Keto', 'Gluten-Free', 'No Dairy']
+      },
+
+      // ---- Demo Data ----
+      mockSubscribers: [
+        {
+          id: 'SUB-001', name: 'Sarah Jenkins', phone: '9900112233', email: 'sarah@gmail.com', balance: 1250, status: 'active', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Citrus Glow' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Citrus Glow' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Citrus Glow' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 15, 2026', ltv: 12000, address: 'Downtown B-12, Green City', dietaryPreferences: ['No Ginger'], dietaryNote: 'Mild allergy to raw ginger', transactions: [
+            { type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Green Vitality' },
+            { type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' },
+            { type: 'topup', amount: 2000, description: 'Added via UPI', date: new Date(Date.now() - 86400000 * 3).toISOString(), eventType: 'wallet' },
+            { type: 'status_paused', description: 'Subscription status changed from active to paused', date: new Date(Date.now() - 86400000 * 4).toISOString(), eventType: 'activity' }
+          ], initials: 'SJ', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange'
+        },
+        { id: 'SUB-002', name: 'Marcus Chen', phone: '9988776655', email: 'marcus@work.co', balance: 450, status: 'active', schedule: [{ day: 'Mon', juice: 'Beet Rooted' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Beet Rooted' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Beet Rooted' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 22, 2026', ltv: 3500, address: 'West Side A-04, Green City', dietaryPreferences: [], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted' }], initials: 'MC', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
+        { id: 'SUB-003', name: 'Elena Rodriguez', phone: '9876501234', email: 'elena@design.io', balance: 0, status: 'paused', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Feb 10, 2026', ltv: 8500, address: 'North Hills C-09, Green City', dietaryPreferences: ['Vegan'], dietaryNote: 'Strictly plant-based', transactions: [{ type: 'bonus', amount: 50, description: 'Empty Bottle Return', date: new Date(Date.now() - 86400000 * 5).toISOString(), eventType: 'wallet' }, { type: 'profile_updated', description: 'Admin updated subscriber profile and dietary preferences', date: new Date(Date.now() - 86400000 * 6).toISOString(), eventType: 'activity' }], initials: 'ER', avatarBg: 'bg-blue-100', avatarColor: 'text-blue-600' },
+        { id: 'SUB-004', name: 'Sofia Miller', phone: '9123456780', email: 'sofia@design.co', balance: 3400, status: 'active', schedule: [{ day: 'Mon', juice: 'Citrus Glow' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Citrus Glow' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Citrus Glow' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Jan 5, 2026', ltv: 18000, address: 'South Park D-11, Green City', dietaryPreferences: [], dietaryNote: '', transactions: [], initials: 'SM', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange' },
+        { id: 'SUB-005', name: 'James Lin', phone: '9871234560', email: 'jlin@software.co', balance: 85, status: 'paused_balance', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Apr 1, 2026', ltv: 1200, address: 'East End E-22, Green City', dietaryPreferences: ['No Sugar'], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' }], initials: 'JL', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
+      ],
+      mockRuns: [
+        { id: 'RUN-001', driver: 'Rajesh Kumar', phone: '9876543210', zone: 'Downtown', drops: [{ customer: 'Sarah Jenkins', address: 'Downtown B-12', juice: 'Green Vitality', status: 'delivered', time: '7:12 AM' }, { customer: 'Priya Sharma', address: 'Downtown A-05', juice: 'Citrus Glow', status: 'delivered', time: '7:24 AM' }, { customer: 'Amit Patel', address: 'Downtown C-08', juice: 'Green Vitality', status: 'in_transit', time: '—' }], status: 'in_progress', startedAt: '6:45 AM' },
+        { id: 'RUN-002', driver: 'Sunil Yadav', phone: '9988776655', zone: 'West Side', drops: [{ customer: 'Marcus Chen', address: 'West Side A-04', juice: 'Beet Rooted', status: 'delivered', time: '7:05 AM' }, { customer: 'Elena Rodriguez', address: 'West Side D-11', juice: 'Citrus Glow', status: 'delivered', time: '7:18 AM' }], status: 'completed', startedAt: '6:50 AM' },
+        { id: 'RUN-003', driver: 'Vikram Singh', phone: '9871234560', zone: 'North Hills', drops: [{ customer: 'Sofia Miller', address: 'North Hills C-09', juice: 'Beet Rooted', status: 'pending', time: '—' }, { customer: 'James Lin', address: 'North Hills E-03', juice: 'Green Vitality', status: 'pending', time: '—' }], status: 'pending', startedAt: '—' }
+      ],
+      mockProcurement: [
+        { ingredient: 'Kale', unit: 'kg', qtyNeeded: 2.4, pricePerUnit: 60, forProduct: 'Green Vitality', bottles: 8, currentStock: 1.5 },
+        { ingredient: 'Spinach', unit: 'kg', qtyNeeded: 1.6, pricePerUnit: 40, forProduct: 'Green Vitality', bottles: 8, currentStock: 0.5 },
+        { ingredient: 'Green Apple', unit: 'kg', qtyNeeded: 2.0, pricePerUnit: 120, forProduct: 'Green Vitality', bottles: 8, currentStock: 0 },
+        { ingredient: 'Lemon', unit: 'pcs', qtyNeeded: 8, pricePerUnit: 5, forProduct: 'Green Vitality', bottles: 8, currentStock: 2 },
+        { ingredient: 'Ginger', unit: 'gm', qtyNeeded: 200, pricePerUnit: 0.3, forProduct: 'Green Vitality', bottles: 8, currentStock: 50 },
+        { ingredient: 'Orange', unit: 'kg', qtyNeeded: 3.0, pricePerUnit: 80, forProduct: 'Citrus Glow', bottles: 6, currentStock: 1.0 },
+        { ingredient: 'Grapefruit', unit: 'kg', qtyNeeded: 1.5, pricePerUnit: 150, forProduct: 'Citrus Glow', bottles: 6, currentStock: 0.5 },
+        { ingredient: 'Turmeric', unit: 'gm', qtyNeeded: 120, pricePerUnit: 0.4, forProduct: 'Citrus Glow', bottles: 6, currentStock: 500 },
+        { ingredient: 'Beetroot', unit: 'kg', qtyNeeded: 2.5, pricePerUnit: 40, forProduct: 'Beet Rooted', bottles: 5, currentStock: 5.0 },
+        { ingredient: 'Blueberry', unit: 'gm', qtyNeeded: 500, pricePerUnit: 1.2, forProduct: 'Beet Rooted', bottles: 5, currentStock: 100 },
+        { ingredient: 'Apple', unit: 'kg', qtyNeeded: 1.5, pricePerUnit: 120, forProduct: 'Beet Rooted', bottles: 5, currentStock: 0 },
+        { ingredient: 'Mint', unit: 'bunch', qtyNeeded: 5, pricePerUnit: 10, forProduct: 'Beet Rooted', bottles: 5, currentStock: 2 }
+      ],
+      mockInventory: [
+        { id: 'INV-001', item: 'Fresh Spinach', category: 'Vegetables', currentStock: '12 kg', minLevel: '15 kg', status: 'low' },
+        { id: 'INV-002', item: 'Organic Apples', category: 'Fruits', currentStock: '85 kg', minLevel: '40 kg', status: 'optimal' },
+        { id: 'INV-003', item: 'Glass Bottles (500ml)', category: 'Packaging', currentStock: '450 units', minLevel: '200 units', status: 'optimal' },
+        { id: 'INV-004', item: 'Raw Ginger', category: 'Vegetables', currentStock: '2 kg', minLevel: '5 kg', status: 'critical' }
+      ],
+      mockPurchases: [
+        { _id: 'mock_1', invoiceNumber: 'INV-001', supplier: 'Local Greens Co.', date: new Date().toISOString(), totalAmount: 450, paymentStatus: 'paid', documentUrl: '/dummy', items: [{ ingredientId: { name: 'Kale', unit: 'kg' }, quantity: 5, pricePaid: 300 }] }
+      ],
 
       // ---- Testimonials Data ----
       testimonials: [

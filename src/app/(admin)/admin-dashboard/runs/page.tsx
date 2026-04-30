@@ -1,48 +1,23 @@
 'use client';
 
-const MOCK_RUNS = [
-  {
-    id: 'RUN-001',
-    driver: 'Rajesh Kumar',
-    phone: '9876543210',
-    zone: 'Downtown',
-    drops: [
-      { customer: 'Sarah Jenkins', address: 'Downtown B-12', juice: 'Green Vitality', status: 'delivered', time: '7:12 AM' },
-      { customer: 'Priya Sharma', address: 'Downtown A-05', juice: 'Citrus Glow', status: 'delivered', time: '7:24 AM' },
-      { customer: 'Amit Patel', address: 'Downtown C-08', juice: 'Green Vitality', status: 'in_transit', time: '—' },
-    ],
-    status: 'in_progress',
-    startedAt: '6:45 AM',
-  },
-  {
-    id: 'RUN-002',
-    driver: 'Sunil Yadav',
-    phone: '9988776655',
-    zone: 'West Side',
-    drops: [
-      { customer: 'Marcus Chen', address: 'West Side A-04', juice: 'Beet Rooted', status: 'delivered', time: '7:05 AM' },
-      { customer: 'Elena Rodriguez', address: 'West Side D-11', juice: 'Citrus Glow', status: 'delivered', time: '7:18 AM' },
-    ],
-    status: 'completed',
-    startedAt: '6:50 AM',
-  },
-  {
-    id: 'RUN-003',
-    driver: 'Vikram Singh',
-    phone: '9871234560',
-    zone: 'North Hills',
-    drops: [
-      { customer: 'Sofia Miller', address: 'North Hills C-09', juice: 'Beet Rooted', status: 'pending', time: '—' },
-      { customer: 'James Lin', address: 'North Hills E-03', juice: 'Green Vitality', status: 'pending', time: '—' },
-    ],
-    status: 'pending',
-    startedAt: '—',
-  },
-];
+import { useState, useEffect } from 'react';
+import useStore from '@/store/useStore';
 
 export default function AdminRunsPage() {
-  const totalDrops = MOCK_RUNS.reduce((s, r) => s + r.drops.length, 0);
-  const completedDrops = MOCK_RUNS.reduce((s, r) => s + r.drops.filter(d => d.status === 'delivered').length, 0);
+  const { mockRuns, isLiveMode } = useStore();
+  const [runs, setRuns] = useState<any[]>(mockRuns);
+
+  useEffect(() => {
+    if (!isLiveMode) {
+      setRuns(mockRuns);
+    } else {
+      // Future live data integration
+      setRuns([]);
+    }
+  }, [isLiveMode, mockRuns]);
+
+  const totalDrops = runs.reduce((s, r) => s + r.drops.length, 0);
+  const completedDrops = runs.reduce((s, r) => s + r.drops.filter((d: any) => d.status === 'delivered').length, 0);
 
   const runStatusStyle = (status: string) => {
     switch (status) {
@@ -99,8 +74,8 @@ export default function AdminRunsPage() {
 
       {/* Runs */}
       <div className="space-y-6">
-        {MOCK_RUNS.map(run => {
-          const runDelivered = run.drops.filter(d => d.status === 'delivered').length;
+        {runs.map(run => {
+          const runDelivered = run.drops.filter((d: any) => d.status === 'delivered').length;
           return (
             <div key={run.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               {/* Run Header */}
@@ -138,7 +113,7 @@ export default function AdminRunsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {run.drops.map((drop, idx) => (
+                    {run.drops.map((drop: any, idx: number) => (
                       <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-5 py-3 text-sm font-bold text-slate-800">{drop.customer}</td>
                         <td className="px-5 py-3 text-xs text-slate-500">{drop.address}</td>

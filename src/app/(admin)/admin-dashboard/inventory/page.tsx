@@ -1,11 +1,21 @@
-import React from "react";
-const MOCK_INVENTORY = [
-    { id: "PROD-01", name: "Zen Green Elixir", category: "Detox", stock: 142, limit: 100, price: "$8.50" },
-    { id: "PROD-02", name: "Ruby Roots", category: "Vitality", stock: 88, limit: 50, price: "$8.75" },
-    { id: "PROD-03", name: "Citrus Glow", category: "Immunity", stock: 24, limit: 100, price: "$7.95" },
-    { id: "PROD-04", name: "Golden Carrot", category: "Vision", stock: 156, limit: 120, price: "$8.00" },
-];
+'use client';
+
+import React, { useState, useEffect } from "react";
+import useStore from '@/store/useStore';
+
 export default function AdminInventoryPage() {
+    const { mockInventory, isLiveMode } = useStore();
+    const [inventory, setInventory] = useState<any[]>(mockInventory);
+
+    useEffect(() => {
+      if (!isLiveMode) {
+        setInventory(mockInventory);
+      } else {
+        // Future live data integration
+        setInventory([]);
+      }
+    }, [isLiveMode, mockInventory]);
+
     return (
         <>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
@@ -36,7 +46,7 @@ export default function AdminInventoryPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {MOCK_INVENTORY.map((item) => (
+                            {inventory.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <p className="text-sm font-bold text-slate-800">{item.name}</p>

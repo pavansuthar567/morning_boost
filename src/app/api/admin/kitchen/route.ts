@@ -113,9 +113,13 @@ export async function PATCH(req: NextRequest) {
       if (batch.status === 'produced') return error('Batch already produced', 400);
 
       // Get product recipe to deduct stock
-      const product = await Product.findById(batch.productId);
-      if (!product || !product.recipe || product.recipe.length === 0) {
+      const product = await Product.findById(batch.productId).populate('recipe');
+      if (!product || !product.recipe) {
         return error('No recipe found for this product', 400);
+      }
+      const recipe = product.recipe as any;
+      if (!recipe.ingredients || recipe.ingredients.length === 0) {
+        return error('Recipe has no ingredients', 400);
       }
 
       const session = await mongoose.startSession();
@@ -123,19 +127,20 @@ export async function PATCH(req: NextRequest) {
         session.startTransaction();
 
         // Deduct stock for each ingredient
-        for (const recipeItem of product.recipe) {
-          const deductQty = (recipeItem.qtyPerBottle || 0) * batch.targetQty;
+        for (const recipeItem of recipe.ingredients) {
+          const deductQty = (recipeItem.quantity || 0) * batch.targetQty;
           if (deductQty <= 0) continue;
 
-          const ingredient = await Ingredient.findById(recipeItem.ingredientId).session(session);
+          const ingredientId = recipeItem.ingredient;
+          const ingredient = await Ingredient.findById(ingredientId).session(session);
           if (!ingredient) {
-            throw new Error(`Ingredient ${recipeItem.ingredientId} not found`);
+            throw new Error(`Ingredient ${ingredientId} not found`);
           }
 
           // Create consumption transaction
           await InventoryTransaction.create(
             [{
-              ingredientId: recipeItem.ingredientId,
+              ingredientId: ingredientId,
               type: 'CONSUMPTION',
               quantity: -deductQty,
               reason: 'PRODUCTION',

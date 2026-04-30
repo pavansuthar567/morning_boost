@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import useStore from '@/store/useStore';
 
 export default function PurchasesPage() {
-  const { token, isLiveMode, adminData } = useStore();
+  const { token, isLiveMode, adminData, mockPurchases } = useStore();
   const [purchases, setPurchases] = useState<any[]>([]);
   const [ingredients, setIngredients] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -18,20 +18,15 @@ export default function PurchasesPage() {
     date: new Date().toISOString().split('T')[0],
     notes: '',
   });
-  const [items, setItems] = useState<any[]>([{ ingredientId: '', quantity: '', pricePaid: '' }]);
+  const [items, setItems] = useState<any[]>([{ ingredientId: '', quantity: '', pricePerUnit: '', pricePaid: 0 }]);
 
   // Fetch initial data
   const fetchData = async () => {
     if (!isLiveMode) {
-      // Mock Data
+      // Demo Data from store
       setIngredients(adminData.rawMaterials);
       setSuppliers(adminData.suppliers || []);
-      setPurchases([
-        {
-          _id: 'mock_1', invoiceNumber: 'INV-001', supplier: 'Local Greens Co.', date: new Date().toISOString(), totalAmount: 450,
-          items: [{ ingredientId: { name: 'Kale', unit: 'kg' }, quantity: 5, pricePaid: 300 }]
-        }
-      ]);
+      setPurchases(mockPurchases);
       return;
     }
 
@@ -60,7 +55,7 @@ export default function PurchasesPage() {
   }, [token, isLiveMode]);
 
   const handleAddItem = () => {
-    setItems([...items, { ingredientId: '', quantity: '', pricePaid: '' }]);
+    setItems([...items, { ingredientId: '', quantity: '', pricePerUnit: '', pricePaid: 0 }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -70,6 +65,10 @@ export default function PurchasesPage() {
   const handleItemChange = (index: number, field: string, value: string) => {
     const newItems = [...items];
     newItems[index][field] = value;
+    // Auto-calculate line total
+    const qty = Number(newItems[index].quantity) || 0;
+    const rate = Number(newItems[index].pricePerUnit) || 0;
+    newItems[index].pricePaid = parseFloat((qty * rate).toFixed(2));
     setItems(newItems);
   };
 
@@ -100,9 +99,9 @@ export default function PurchasesPage() {
     }
 
     // Validate items
-    const validItems = items.filter(i => i.ingredientId && Number(i.quantity) > 0 && Number(i.pricePaid) >= 0);
+    const validItems = items.filter(i => i.ingredientId && Number(i.quantity) > 0 && Number(i.pricePerUnit) > 0);
     if (validItems.length !== items.length) {
-      return alert('Please ensure all items have an ingredient, quantity, and valid price.');
+      return alert('Please ensure all items have an ingredient, quantity, and rate per unit.');
     }
 
     if (!isLiveMode) {
@@ -132,7 +131,7 @@ export default function PurchasesPage() {
       if (res.ok) {
         setIsModalOpen(false);
         setFormData({ supplier: '', date: new Date().toISOString().split('T')[0], notes: '' });
-        setItems([{ ingredientId: '', quantity: '', pricePaid: '' }]);
+        setItems([{ ingredientId: '', quantity: '', pricePerUnit: '', pricePaid: 0 }]);
         fetchData();
       } else {
         const err = await res.json();
@@ -273,13 +272,17 @@ export default function PurchasesPage() {
                           ))}
                         </select>
                       </div>
-                      <div className="w-full md:w-32">
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Qty Added</label>
+                      <div className="w-full md:w-28">
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Qty</label>
                         <input type="number" step="0.01" value={item.quantity} onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none" placeholder="0" />
                       </div>
-                      <div className="w-full md:w-32">
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Total Paid (₹)</label>
-                        <input type="number" step="0.01" value={item.pricePaid} onChange={(e) => handleItemChange(idx, 'pricePaid', e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none" placeholder="0.00" />
+                      <div className="w-full md:w-28">
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Rate/Unit (₹)</label>
+                        <input type="number" step="0.01" value={item.pricePerUnit} onChange={(e) => handleItemChange(idx, 'pricePerUnit', e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none" placeholder="0.00" />
+                      </div>
+                      <div className="w-full md:w-28">
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Line Total (₹)</label>
+                        <div className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700">₹{(Number(item.pricePaid) || 0).toFixed(2)}</div>
                       </div>
                       <button onClick={() => handleRemoveItem(idx)} className="text-red-400 hover:text-red-600 p-2 md:mb-1">
                         <span className="material-symbols-outlined text-[20px]">delete</span>

@@ -3,31 +3,16 @@
 import { useState, useEffect } from 'react';
 import useStore from '@/store/useStore';
 
-const MOCK_PROCUREMENT = [
-  { ingredient: 'Kale', unit: 'kg', qtyNeeded: 2.4, pricePerUnit: 60, forProduct: 'Green Vitality', bottles: 8, currentStock: 1.5 },
-  { ingredient: 'Spinach', unit: 'kg', qtyNeeded: 1.6, pricePerUnit: 40, forProduct: 'Green Vitality', bottles: 8, currentStock: 0.5 },
-  { ingredient: 'Green Apple', unit: 'kg', qtyNeeded: 2.0, pricePerUnit: 120, forProduct: 'Green Vitality', bottles: 8, currentStock: 0 },
-  { ingredient: 'Lemon', unit: 'pcs', qtyNeeded: 8, pricePerUnit: 5, forProduct: 'Green Vitality', bottles: 8, currentStock: 2 },
-  { ingredient: 'Ginger', unit: 'gm', qtyNeeded: 200, pricePerUnit: 0.3, forProduct: 'Green Vitality', bottles: 8, currentStock: 50 },
-  { ingredient: 'Orange', unit: 'kg', qtyNeeded: 3.0, pricePerUnit: 80, forProduct: 'Citrus Glow', bottles: 6, currentStock: 1.0 },
-  { ingredient: 'Grapefruit', unit: 'kg', qtyNeeded: 1.5, pricePerUnit: 150, forProduct: 'Citrus Glow', bottles: 6, currentStock: 0.5 },
-  { ingredient: 'Turmeric', unit: 'gm', qtyNeeded: 120, pricePerUnit: 0.4, forProduct: 'Citrus Glow', bottles: 6, currentStock: 500 },
-  { ingredient: 'Beetroot', unit: 'kg', qtyNeeded: 2.5, pricePerUnit: 40, forProduct: 'Beet Rooted', bottles: 5, currentStock: 5.0 },
-  { ingredient: 'Blueberry', unit: 'gm', qtyNeeded: 500, pricePerUnit: 1.2, forProduct: 'Beet Rooted', bottles: 5, currentStock: 100 },
-  { ingredient: 'Apple', unit: 'kg', qtyNeeded: 1.5, pricePerUnit: 120, forProduct: 'Beet Rooted', bottles: 5, currentStock: 0 },
-  { ingredient: 'Mint', unit: 'bunch', qtyNeeded: 5, pricePerUnit: 10, forProduct: 'Beet Rooted', bottles: 5, currentStock: 2 },
-];
-
 export default function AdminProcurementPage() {
-  const { token, isLiveMode } = useStore();
-  const [procurementList, setProcurementList] = useState<typeof MOCK_PROCUREMENT>([]);
+  const { token, isLiveMode, mockProcurement } = useStore();
+  const [procurementList, setProcurementList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProcurement = async () => {
       setIsLoading(true);
       if (!isLiveMode) {
-        setProcurementList(MOCK_PROCUREMENT);
+        setProcurementList(mockProcurement);
         setIsLoading(false);
         return;
       }
@@ -48,14 +33,16 @@ export default function AdminProcurementPage() {
       }
     };
     fetchProcurement();
-  }, [token, isLiveMode]);
+  }, [token, isLiveMode, mockProcurement]);
 
   // Group by product for detailed view
-  const groupedByProduct = procurementList.reduce((acc, item) => {
+  const groupedByProduct = procurementList.reduce((acc: any, item: any) => {
     if (!acc[item.forProduct]) acc[item.forProduct] = [];
     acc[item.forProduct].push(item);
     return acc;
-  }, {} as Record<string, typeof MOCK_PROCUREMENT>);
+  }, {} as { [key: string]: any[] });
+
+  const groupedEntries = Object.entries(groupedByProduct) as [string, any[]][];
 
   // Aggregate master list by ingredient
   const aggregatedItems = Object.values(
@@ -73,7 +60,7 @@ export default function AdminProcurementPage() {
       acc[item.ingredient].qtyNeeded += item.qtyNeeded;
       return acc;
     }, {} as Record<string, any>)
-  ).map(item => {
+  ).map((item: any) => {
     const qtyToBuy = Math.max(0, item.qtyNeeded - item.currentStock);
     return {
       ...item,
@@ -82,7 +69,7 @@ export default function AdminProcurementPage() {
     };
   });
 
-  const totalCostToBuy = aggregatedItems.reduce((sum, i) => sum + i.costToBuy, 0);
+  const totalCostToBuy = aggregatedItems.reduce((sum: number, i: any) => sum + i.costToBuy, 0);
 
   const handlePrint = () => {
     window.print();
@@ -99,10 +86,10 @@ export default function AdminProcurementPage() {
     // 2. Detailed Recipe Breakdown
     csvString += "\n\n--- DETAILED RECIPE BREAKDOWN ---\n\n";
     
-    Object.entries(groupedByProduct).forEach(([product, items]) => {
+    groupedEntries.forEach(([product, items]) => {
       csvString += `${product.toUpperCase()} (${items[0].bottles} bottles)\n`;
       csvString += `Ingredient,Qty Needed,Rate,Line Total\n`;
-      items.forEach(i => {
+      items.forEach((i: any) => {
          const lineTotal = i.qtyNeeded * i.pricePerUnit;
          csvString += `${i.ingredient},${i.qtyNeeded} ${i.unit},${i.pricePerUnit}/${i.unit},${lineTotal}\n`;
       });
@@ -210,8 +197,8 @@ export default function AdminProcurementPage() {
       {/* Grouped by Product (Detailed Breakdown) */}
       <h2 className="font-headline text-lg font-bold text-slate-800 mb-6 px-1">Detailed Recipe Breakdown</h2>
       <div className="space-y-6">
-        {Object.entries(groupedByProduct).map(([product, items]) => {
-          const subtotal = items.reduce((s, i) => s + (i.qtyNeeded * i.pricePerUnit), 0);
+        {groupedEntries.map(([product, items]) => {
+          const subtotal = items.reduce((s: number, i: any) => s + (i.qtyNeeded * i.pricePerUnit), 0);
           return (
             <div key={product} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -237,7 +224,7 @@ export default function AdminProcurementPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {items.map((item, idx) => {
+                    {items.map((item: any, idx: number) => {
                       const lineTotal = item.qtyNeeded * item.pricePerUnit;
                       return (
                         <tr key={idx} className="hover:bg-slate-50/50 transition-colors">

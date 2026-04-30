@@ -82,7 +82,7 @@ export default function AdminRawMaterialsPage() {
         name: material.name,
         unit: material.unit,
         marketPrice: material.marketPrice,
-        qtyAvailable: material.qtyAvailable, // Only used visually or for new
+        qtyAvailable: parseFloat(Number(material.qtyAvailable).toFixed(2)),
         minStockLevel: material.minStockLevel || 0,
         supplier: material.supplier || '',
         isActive: material.isActive !== undefined ? material.isActive : true
@@ -272,7 +272,7 @@ export default function AdminRawMaterialsPage() {
                       <span className="text-xs text-slate-400"> / {mat.unit}</span>
                     </td>
                     <td className="px-5 py-4 text-sm font-medium text-slate-600">
-                      <span className={isLowStock ? 'text-rose-600 font-bold' : ''}>{mat.qtyAvailable}</span>
+                      <span className={isLowStock ? 'text-rose-600 font-bold' : ''}>{parseFloat(Number(mat.qtyAvailable).toFixed(2))}</span>
                       <span className="text-xs text-slate-400 ml-1">{mat.unit}</span>
                     </td>
                     <td className="px-5 py-4 text-sm text-slate-600">
