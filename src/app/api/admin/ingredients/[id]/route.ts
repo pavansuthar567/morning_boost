@@ -14,6 +14,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     await dbConnect();
     const body = await req.json();
 
+    // Prevent direct stock updates through PATCH, must use transactions API
+    delete body.qtyAvailable;
+
     const ingredient = await Ingredient.findByIdAndUpdate(id, body, { new: true });
     if (!ingredient) return error('Ingredient not found', 404);
 

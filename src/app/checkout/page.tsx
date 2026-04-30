@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import TopNavBar from "@/components/common/TopNavBar";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import useStore from "@/store/useStore";
@@ -25,8 +26,9 @@ function calculateBonus(amount: number): number {
 
 export default function Checkout() {
   const router = useRouter();
-  const { user, checkoutData, createTopUpOrder, verifyTopUp, addAddress, createSubscription, wallet } = useStore();
+  const { user, checkoutData, setCheckoutData, createTopUpOrder, verifyTopUp, addAddress, createSubscription, wallet, isLiveMode } = useStore();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
@@ -43,17 +45,16 @@ export default function Checkout() {
   });
 
   useEffect(() => {
-    if (!checkoutData) {
-      router.push('/subscribe');
-    }
     // Auto-select default address if available
     if (user?.addresses?.length && !selectedAddressId) {
       const def = user.addresses.find((a: any) => a.isDefault) || user.addresses[0];
       setSelectedAddressId(def._id || null);
     }
-  }, [checkoutData, router, user, selectedAddressId]);
+  }, [router, user, selectedAddressId]);
 
-  if (!checkoutData) return null;
+  // If no checkoutData, we can still allow wallet top-ups, we just won't show the subscription summary.
+  const scheduleData = checkoutData?.schedule;
+  const weeklyTotal = checkoutData?.weeklyTotal || 0;
 
   const bonus = calculateBonus(topUpAmount);
   const totalCredit = topUpAmount + bonus;
@@ -76,10 +77,12 @@ export default function Checkout() {
   };
 
   const handlePayment = async () => {
+    /* 
     if (!selectedAddressId) {
       setError("Please select a delivery address!");
       return;
     }
+    */
 
     if (topUpAmount < 1000) {
       setError("Minimum top-up amount is ₹1,000");
@@ -116,9 +119,9 @@ export default function Checkout() {
             });
 
             // 4. Create subscription if we have schedule data
-            if (checkoutData.schedule) {
+            if (scheduleData) {
               try {
-                const scheduleForApi = checkoutData.schedule.map(s => ({
+                const scheduleForApi = scheduleData.map(s => ({
                   dayOfWeek: s.dayOfWeek,
                   productId: s.productId,
                 }));
@@ -129,9 +132,10 @@ export default function Checkout() {
               }
             }
 
-            // 5. Success! Redirect to dashboard
-            alert(`Payment Successful! ₹${topUpAmount}${bonus > 0 ? ` + ₹${bonus} bonus` : ''} credited to your wallet.`);
-            router.push('/dashboard');
+            // 5. Success! Render success Step 3 natively
+            setPaymentSuccess(true);
+            if (setCheckoutData) setCheckoutData(null);
+            // No redirect, letting the user enjoy the Success UI receipt
           } catch (e: any) {
             setError(e.message || "Verification failed");
             setIsProcessing(false);
@@ -153,6 +157,16 @@ export default function Checkout() {
         }
       };
 
+      if (!isLiveMode) {
+        // Bypass Razorpay entirely in offline mock mode
+        options.handler({
+          razorpay_order_id: order.id,
+          razorpay_payment_id: `pay_mock_${Date.now()}`,
+          razorpay_signature: 'sign_mock_123'
+        });
+        return;
+      }
+
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } catch (e: any) {
@@ -165,35 +179,64 @@ export default function Checkout() {
     <AuthGuard>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <div className="text-on-surface antialiased overflow-x-hidden bg-[#FAFAFA] font-body min-h-screen pb-32">
-        {/* TopNavBar */}
-        <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl font-headline h-20 border-b border-slate-100 flex items-center">
-          <div className="flex justify-between items-center px-8 w-full max-w-[1440px] mx-auto">
-            <Link href="/" className="text-2xl font-black text-orange-600 italic font-headline cursor-pointer">Morning Fresh</Link>
-            <div className="hidden md:flex items-center gap-8">
-              <Link className="text-slate-600 hover:text-orange-500 transition-colors" href="/catalog">Our Juices</Link>
-              <Link className="text-orange-600 font-bold border-b-2 border-orange-500 pb-1" href="/subscribe">Subscriptions</Link>
-            </div>
-            <div className="flex items-center gap-6">
-              <span className="text-sm font-bold text-slate-400">{user?.name}</span>
+        <TopNavBar />
+        {/* Main Content */}
+        <main className="pt-32 px-6 max-w-7xl mx-auto w-full">
+          {/* Unified Progress Stepper */}
+          <div className="mb-16">
+            <div className="flex items-center justify-between relative max-w-lg mx-auto">
+              {/* Progress Line */}
+              <div className="absolute top-6 left-6 right-6 h-1 bg-surface-container-high -translate-y-1/2 z-0 rounded-full overflow-hidden">
+                <div className={`absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-1000 ${paymentSuccess ? 'w-full' : 'w-1/2'}`}></div>
+              </div>
+              
+              {/* Steps */}
+              <div className="relative z-10 flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-xl shadow-primary/30 ring-4 ring-white">
+                  <span className="material-symbols-outlined text-xl">check</span>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Rhythm</span>
+              </div>
+              
+              <div className="relative z-10 flex flex-col items-center gap-2">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ring-4 ring-white transition-all duration-500 ${paymentSuccess ? "bg-primary text-white shadow-xl shadow-primary/30" : "bg-primary text-white shadow-xl shadow-primary/30"}`}>
+                  {paymentSuccess ? <span className="material-symbols-outlined text-xl">check</span> : "2"}
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Checkout</span>
+              </div>
+              
+              <div className="relative z-10 flex flex-col items-center gap-2">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ring-4 ring-white transition-all duration-500 ${paymentSuccess ? "bg-primary text-white shadow-xl shadow-primary/30" : "bg-surface-container-highest text-slate-400"}`}>
+                  <span className="material-symbols-outlined text-sm">home</span>
+                </div>
+                <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${paymentSuccess ? 'text-primary' : 'text-slate-400'}`}>Confirmed</span>
+              </div>
             </div>
           </div>
-        </nav>
 
-        {/* Main Content */}
-        <main className="pt-32 px-6 max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            
-            {/* Left Column */}
-            <div className="space-y-8">
-              {/* Weekly Schedule Summary */}
-              {checkoutData.schedule && (
+          {paymentSuccess ? (
+            <div className="max-w-2xl mx-auto bg-white p-12 md:p-16 rounded-[3rem] border border-slate-100 shadow-xl text-center flex flex-col items-center animate-in fade-in zoom-in duration-500">
+              <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-8 ring-8 ring-green-50/50">
+                 <span className="material-symbols-outlined text-5xl">check_circle</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-black font-headline mb-4 tracking-tight">Schedule Locked!</h1>
+              <p className="text-slate-500 mb-10 max-w-md text-lg leading-relaxed">Your wallet was successfully topped up. Your cold-pressed vitality will be arriving exactly on schedule.</p>
+              <Link href="/dashboard" className="px-10 py-5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full font-black tracking-widest shadow-xl shadow-orange-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase text-sm">
+                 Go to Dashboard
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Left Column — Order Summary */}
+              <div className="space-y-8 flex-1">
+              {scheduleData && (
                 <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
                   <h2 className="text-2xl font-black mb-6 font-headline flex items-center gap-3">
                     <span className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm">1</span>
                     Your Weekly Ritual
                   </h2>
                   <div className="space-y-3">
-                    {checkoutData.schedule
+                    {scheduleData
                       .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
                       .map((item) => {
                         const dayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][item.dayOfWeek];
@@ -209,7 +252,7 @@ export default function Checkout() {
                       })}
                     <div className="flex justify-between items-center pt-3 border-t border-slate-100 mt-2">
                       <span className="font-bold text-lg">Weekly Total</span>
-                      <span className="text-2xl font-black text-primary font-headline">₹{checkoutData.weeklyTotal}/wk</span>
+                      <span className="text-2xl font-black text-primary font-headline">₹{weeklyTotal}/wk</span>
                     </div>
                   </div>
                 </div>
@@ -224,7 +267,7 @@ export default function Checkout() {
                 <p className="text-sm text-slate-500 mb-6 ml-11">Minimum ₹1,000. Higher amounts unlock bonus credits!</p>
 
                 {/* Quick Amount Buttons */}
-                <div className="grid grid-cols-4 gap-3 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {QUICK_AMOUNTS.map(amt => (
                     <button
                       key={amt}
@@ -249,14 +292,14 @@ export default function Checkout() {
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
                   <input
                     type="number"
-                    placeholder="Custom amount (min ₹1,000)"
+                    placeholder="Enter custom amount..."
                     value={customAmount}
                     onChange={(e) => {
                       setCustomAmount(e.target.value);
                       const val = Number(e.target.value);
                       if (val >= 1000) setTopUpAmount(val);
                     }}
-                    className="w-full bg-slate-50 border-none rounded-xl px-8 py-4 font-bold focus:ring-2 focus:ring-orange-600/20 outline-none text-lg"
+                    className="w-full bg-slate-50 border-none rounded-xl px-8 py-4 font-bold focus:ring-2 focus:ring-orange-600/20 outline-none text-sm md:text-lg"
                     min={1000}
                   />
                 </div>
@@ -275,15 +318,15 @@ export default function Checkout() {
                       </div>
                     )}
                   </div>
-                  {checkoutData.weeklyTotal && checkoutData.weeklyTotal > 0 && (
+                  {weeklyTotal > 0 && (
                     <div className="mt-3 pt-3 border-t border-orange-100 text-xs text-slate-500 font-bold">
-                      ≈ {Math.floor(totalCredit / (checkoutData.weeklyTotal / 7))} days of juice delivery
+                      ≈ {Math.floor(totalCredit / (weeklyTotal / 7))} days of juice delivery
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Address Selection */}
+              {/* Address Selection - Temporarily Commented Out per request
               <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-black font-headline flex items-center gap-3">
@@ -338,6 +381,7 @@ export default function Checkout() {
                   )}
                 </div>
               </div>
+              */}
             </div>
 
             {/* Right Column — Checkout CTA */}
@@ -377,7 +421,7 @@ export default function Checkout() {
                   </div>
 
                   <button 
-                    disabled={isProcessing || !selectedAddressId}
+                    disabled={isProcessing}
                     onClick={handlePayment}
                     className={`w-full group/btn h-16 rounded-full bg-orange-600 text-white font-black text-lg shadow-2xl shadow-orange-600/30 hover:bg-orange-500 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed cursor-pointer`}
                   >
@@ -393,7 +437,7 @@ export default function Checkout() {
 
                   <div className="flex items-center justify-center gap-8 pt-4 filter grayscale opacity-40">
                     <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[12px] text-green-400">shield_check</span>
+                      <span className="material-symbols-outlined text-[14px] text-green-400">verified_user</span>
                       <span className="text-[10px] font-black uppercase tracking-widest">Protected by SSL Security</span>
                     </div>
                   </div>
@@ -409,6 +453,7 @@ export default function Checkout() {
               )}
             </div>
           </div>
+          )}
         </main>
 
         {/* Modal: Add Address */}

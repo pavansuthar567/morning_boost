@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useRef } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 
 import useStore from "@/store/useStore";
+import TopNavBar from "@/components/common/TopNavBar";
 
 export default function Home() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -21,23 +22,7 @@ export default function Home() {
 
   return (
     <div className="bg-surface font-body text-on-surface antialiased overflow-x-hidden">
-      {/* TopNavBar */}
-      <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl shadow-sm shadow-orange-900/5 font-headline antialiased tracking-tight">
-        <div className="flex justify-between items-center h-20 px-8 max-w-[1440px] mx-auto relative">
-          <Link href="/" className="text-2xl font-black text-[#FF8C00] italic cursor-pointer">Morning Fresh</Link>
-          <div className="hidden md:flex items-center space-x-8">
-            <Link className="text-[#FF8C00] font-bold border-b-2 border-[#FFA500] pb-1" href="/catalog">Juices</Link>
-            <Link className="text-slate-600 hover:text-orange-600 transition-all duration-300" href="/subscribe">Plans</Link>
-            <a className="text-slate-600 hover:text-orange-600 transition-all duration-300 font-medium" href="#health-goals">Health Goals</a>
-            <a className="text-slate-600 hover:text-orange-600 transition-all duration-300 font-medium" href="#how-it-works">How it Works</a>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link href="/login" className="px-6 py-2.5 rounded-full text-slate-600 font-semibold hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">Login</Link>
-            <Link href="/subscribe" className="vitality-gradient px-8 py-2.5 rounded-full text-white font-bold active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-900/10">Subscribe</Link>
-          </div>
-          <div className="bg-slate-100 h-[1px] w-full absolute bottom-0 opacity-20 left-0"></div>
-        </div>
-      </nav>
+      <TopNavBar />
       <main>
         {/* Hero Section */}
         <section className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-surface-container-low">
@@ -81,24 +66,24 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Immunity */}
               <div className="group p-12 rounded-3xl bg-surface-container-low hover:bg-white transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-900/5">
-                <div className="w-20 h-20 rounded-3xl bg-orange-50 flex items-center justify-center mb-10 group-hover:rotate-6 transition-transform">
-                  <span className="material-symbols-outlined text-primary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>shield_with_heart</span>
+                <div className="w-16 h-16 rounded-2xl bg-primary-fixed flex items-center justify-center mb-8 group-hover:rotate-6 transition-transform">
+                  <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>shield_with_heart</span>
                 </div>
                 <h3 className="text-2xl font-headline font-black mb-4">Immunity</h3>
                 <p className="text-on-surface-variant leading-relaxed font-medium">High-potency Vitamin C and ginger extracts to fortify your natural defenses against seasonal shifts.</p>
               </div>
               {/* Energy */}
               <div className="group p-12 rounded-3xl bg-surface-container-low hover:bg-white transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-900/5">
-                <div className="w-20 h-20 rounded-3xl bg-orange-50 flex items-center justify-center mb-10 group-hover:-rotate-6 transition-transform">
-                  <span className="material-symbols-outlined text-primary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+                <div className="w-16 h-16 rounded-2xl bg-secondary-fixed flex items-center justify-center mb-8 group-hover:-rotate-6 transition-transform">
+                  <span className="material-symbols-outlined text-secondary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                 </div>
                 <h3 className="text-2xl font-headline font-black mb-4">Energy</h3>
                 <p className="text-on-surface-variant leading-relaxed font-medium">Clean, steady energy from leafy greens and root vegetables without the caffeine crash or jitters.</p>
               </div>
               {/* Detox */}
               <div className="group p-12 rounded-3xl bg-surface-container-low hover:bg-white transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-900/5">
-                <div className="w-20 h-20 rounded-3xl bg-orange-50 flex items-center justify-center mb-10 group-hover:rotate-6 transition-transform">
-                  <span className="material-symbols-outlined text-primary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>spa</span>
+                <div className="w-16 h-16 rounded-2xl bg-tertiary-fixed flex items-center justify-center mb-8 group-hover:rotate-6 transition-transform">
+                  <span className="material-symbols-outlined text-tertiary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>spa</span>
                 </div>
                 <h3 className="text-2xl font-headline font-black mb-4">Detox</h3>
                 <p className="text-on-surface-variant leading-relaxed font-medium">Systemic cleansing with activated charcoal and alkaline celery blends to refresh your cellular health.</p>
@@ -207,13 +192,13 @@ export default function Home() {
                 <p className="text-on-surface-variant text-xl font-medium leading-relaxed">Join the community that transformed their health, one cold-pressed sunrise at a time.</p>
               </div>
               <div className="flex gap-4">
-                <button 
+                <button
                   onClick={() => scroll('left')}
                   className="w-16 h-16 rounded-3xl bg-white flex items-center justify-center text-primary shadow-xl shadow-orange-900/5 active:scale-95 transition-all hover:bg-slate-50"
                 >
                   <span className="material-symbols-outlined font-black">arrow_back</span>
                 </button>
-                <button 
+                <button
                   onClick={() => scroll('right')}
                   className="w-16 h-16 rounded-3xl vitality-gradient flex items-center justify-center text-white shadow-xl shadow-orange-900/10 active:scale-95 transition-all hover:brightness-110"
                 >
@@ -221,8 +206,8 @@ export default function Home() {
                 </button>
               </div>
             </div>
-            
-            <div 
+
+            <div
               ref={scrollRef}
               className="flex overflow-x-auto snap-x snap-mandatory gap-0 pb-4 scroll-smooth no-scrollbar"
               style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
@@ -232,15 +217,15 @@ export default function Home() {
                   display: none;
                 }
               `}</style>
-              
+
               {testimonials.map((t, i) => (
-                <div 
+                <div
                   key={i}
                   className="min-w-full snap-center flex-shrink-0 bg-white p-12 rounded-[2.5rem] shadow-xl shadow-orange-900/5 flex flex-col justify-between border border-slate-50 relative"
                 >
                   <div className="max-w-3xl mx-auto w-full">
                     <div className="flex text-[#FFA500] mb-8 gap-1 justify-center">
-                      {[1,2,3,4,5].map(star => (
+                      {[1, 2, 3, 4, 5].map(star => (
                         <span key={star} className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                       ))}
                     </div>
@@ -267,7 +252,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      
+
       {/* Footer */}
       <footer className="w-full bg-white font-headline border-t border-slate-100">
         <div className="h-32 flex items-center">
@@ -279,7 +264,7 @@ export default function Home() {
               <a className="text-slate-400 hover:text-primary transition-colors" href="#">Sustainability</a>
               <a className="text-slate-400 hover:text-primary transition-colors" href="#">Wholesale</a>
             </div>
-            <div className="text-slate-300 text-[10px] font-black uppercase tracking-[0.2em]">© 2024 Morning Fresh. Cold-Pressed Vitality.</div>
+            <div className="text-slate-300 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 Morning Fresh. Cold-Pressed Vitality.</div>
           </div>
         </div>
       </footer>

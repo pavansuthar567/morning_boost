@@ -12,7 +12,10 @@ export async function GET(req: NextRequest) {
     if (roleErr) return roleErr;
 
     await dbConnect();
-    const ingredients = await Ingredient.find().sort({ name: 1 });
+    const ingredients = await Ingredient.find()
+      .populate('supplier', 'name contactName')
+      .sort({ name: 1 })
+      .lean();
     return ok({ ingredients });
   } catch (err: unknown) {
     console.error('Get ingredients error:', err);
@@ -30,13 +33,22 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
     const body = await req.json();
-    const { name, category, unit, marketPrice, qtyAvailable } = body;
+    const { name, category, unit, marketPrice, qtyAvailable, supplier, isActive, minStockLevel } = body;
 
     if (!name || !category || !unit) {
       return error('Name, category and unit are required');
     }
 
-    const ingredient = await Ingredient.create({ name, category, unit, marketPrice, qtyAvailable });
+    const ingredient = await Ingredient.create({
+      name,
+      category,
+      unit,
+      marketPrice,
+      qtyAvailable,
+      supplier,
+      isActive: isActive !== undefined ? isActive : true,
+      minStockLevel: minStockLevel || 0
+    });
     return ok({ ingredient }, 201);
   } catch (err: unknown) {
     console.error('Create ingredient error:', err);

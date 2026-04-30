@@ -22,6 +22,37 @@ export interface WalletState {
   transactions: any[];
 }
 
+export interface Supplier {
+  _id: string;
+  name: string;
+  contactName?: string;
+  phone?: string;
+  isActive: boolean;
+}
+
+export interface RawMaterial {
+  _id: string;
+  name: string;
+  unit: string;
+  marketPrice: number;
+  qtyAvailable: number;
+  minStockLevel: number;
+  supplier?: { _id: string; name: string } | string;
+  isActive: boolean;
+}
+
+export interface ProductBenefit {
+  title: string;
+  description: string;
+}
+
+export interface RecipeItem {
+  ingredientId: string;
+  ingredientName: string;
+  qtyPerBottle: number;
+  unit: string;
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -29,6 +60,11 @@ export interface Product {
   category: string;
   image: string;
   description?: string;
+  ingredients?: string[];
+  benefits?: string[];
+  detailedBenefits?: ProductBenefit[];
+  recipe?: RecipeItem[];
+  recipeInstructions?: string[];
   isActive: boolean;
 }
 
@@ -44,11 +80,13 @@ export interface Subscription {
   deliveryAddress: string;
   timeSlot: string;
   status: 'active' | 'paused' | 'paused_balance' | 'cancelled';
+  dietaryPreferences?: string[];
+  dietaryNote?: string;
 }
 
 export interface Order {
   _id: string;
-  user?: { name: string; phone: string };
+  user?: { name: string; phone: string; avatar?: string };
   items: { product: any; quantity: number; price: number }[];
   deliveryDate: string;
   status: string;
@@ -63,6 +101,8 @@ interface AppStore {
   // Connection State
   isBackendConnected: boolean;
   setIsBackendConnected: (connected: boolean) => void;
+  isLiveMode: boolean;
+  setIsLiveMode: (live: boolean) => void;
 
   // Auth
   user: User | null;
@@ -105,6 +145,8 @@ interface AppStore {
     allOrders: Order[];
     procurement: any[];
     recipes: any[];
+    rawMaterials: RawMaterial[];
+    suppliers: Supplier[];
     stats: any;
   };
   fetchAdminData: (type: 'subscribers' | 'inventory' | 'orders' | 'stats' | 'procurement' | 'recipes') => Promise<void>;
@@ -137,6 +179,10 @@ interface AppStore {
   verifyTopUp: (paymentData: any) => Promise<void>;
 
   // Admin CRUD
+  adminSettings: any;
+  fetchAdminSettings: () => Promise<void>;
+  updateAdminSettings: (data: any) => Promise<void>;
+
   saveProduct: (id: string | null, data: any) => Promise<boolean>;
   deleteProduct: (id: string) => Promise<void>;
   saveIngredient: (id: string | null, data: any) => Promise<void>;
@@ -146,10 +192,24 @@ interface AppStore {
   // Addresses
   addAddress: (data: any) => Promise<void>;
   removeAddress: (id: string) => Promise<void>;
+  updateDietaryPreferences: (preferences: string[]) => Promise<void>;
 
   isAuthenticated: boolean;
   // Dev
   bypassLogin: (role?: 'user' | 'admin') => void;
+
+  // Configuration & Constants
+  config: {
+    juiceOptions: string[];
+    dietOptions: string[];
+  };
+
+  // Demo Data (Mock)
+  mockSubscribers: any[];
+  mockRuns: any[];
+  mockProcurement: any[];
+  mockInventory: any[];
+  mockPurchases: any[];
 }
 
 const useStore = create<AppStore>()(
@@ -158,6 +218,58 @@ const useStore = create<AppStore>()(
       // ---- Connection State ----
       isBackendConnected: false,
       setIsBackendConnected: (connected) => set({ isBackendConnected: connected }),
+      isLiveMode: false,
+      setIsLiveMode: (live) => set({ isLiveMode: live }),
+
+      // ---- Config & Constants ----
+      config: {
+        juiceOptions: ['Green Vitality', 'Citrus Glow', 'Beet Rooted'],
+        dietOptions: ['Vegan', 'No Ginger', 'No Sugar', 'Keto', 'Gluten-Free', 'No Dairy']
+      },
+
+      // ---- Demo Data ----
+      mockSubscribers: [
+        {
+          id: 'SUB-001', name: 'Sarah Jenkins', phone: '9900112233', email: 'sarah@gmail.com', balance: 1250, status: 'active', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Citrus Glow' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Citrus Glow' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Citrus Glow' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 15, 2026', ltv: 12000, address: 'Downtown B-12, Green City', dietaryPreferences: ['No Ginger'], dietaryNote: 'Mild allergy to raw ginger', transactions: [
+            { type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Green Vitality' },
+            { type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' },
+            { type: 'topup', amount: 2000, description: 'Added via UPI', date: new Date(Date.now() - 86400000 * 3).toISOString(), eventType: 'wallet' },
+            { type: 'status_paused', description: 'Subscription status changed from active to paused', date: new Date(Date.now() - 86400000 * 4).toISOString(), eventType: 'activity' }
+          ], initials: 'SJ', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange'
+        },
+        { id: 'SUB-002', name: 'Marcus Chen', phone: '9988776655', email: 'marcus@work.co', balance: 450, status: 'active', schedule: [{ day: 'Mon', juice: 'Beet Rooted' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Beet Rooted' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Beet Rooted' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 22, 2026', ltv: 3500, address: 'West Side A-04, Green City', dietaryPreferences: [], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted' }], initials: 'MC', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
+        { id: 'SUB-003', name: 'Elena Rodriguez', phone: '9876501234', email: 'elena@design.io', balance: 0, status: 'paused', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Feb 10, 2026', ltv: 8500, address: 'North Hills C-09, Green City', dietaryPreferences: ['Vegan'], dietaryNote: 'Strictly plant-based', transactions: [{ type: 'bonus', amount: 50, description: 'Empty Bottle Return', date: new Date(Date.now() - 86400000 * 5).toISOString(), eventType: 'wallet' }, { type: 'profile_updated', description: 'Admin updated subscriber profile and dietary preferences', date: new Date(Date.now() - 86400000 * 6).toISOString(), eventType: 'activity' }], initials: 'ER', avatarBg: 'bg-blue-100', avatarColor: 'text-blue-600' },
+        { id: 'SUB-004', name: 'Sofia Miller', phone: '9123456780', email: 'sofia@design.co', balance: 3400, status: 'active', schedule: [{ day: 'Mon', juice: 'Citrus Glow' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Citrus Glow' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Citrus Glow' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Jan 5, 2026', ltv: 18000, address: 'South Park D-11, Green City', dietaryPreferences: [], dietaryNote: '', transactions: [], initials: 'SM', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange' },
+        { id: 'SUB-005', name: 'James Lin', phone: '9871234560', email: 'jlin@software.co', balance: 85, status: 'paused_balance', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Apr 1, 2026', ltv: 1200, address: 'East End E-22, Green City', dietaryPreferences: ['No Sugar'], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' }], initials: 'JL', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
+      ],
+      mockRuns: [
+        { id: 'RUN-001', driver: 'Rajesh Kumar', phone: '9876543210', zone: 'Downtown', drops: [{ customer: 'Sarah Jenkins', address: 'Downtown B-12', juice: 'Green Vitality', status: 'delivered', time: '7:12 AM' }, { customer: 'Priya Sharma', address: 'Downtown A-05', juice: 'Citrus Glow', status: 'delivered', time: '7:24 AM' }, { customer: 'Amit Patel', address: 'Downtown C-08', juice: 'Green Vitality', status: 'in_transit', time: '—' }], status: 'in_progress', startedAt: '6:45 AM' },
+        { id: 'RUN-002', driver: 'Sunil Yadav', phone: '9988776655', zone: 'West Side', drops: [{ customer: 'Marcus Chen', address: 'West Side A-04', juice: 'Beet Rooted', status: 'delivered', time: '7:05 AM' }, { customer: 'Elena Rodriguez', address: 'West Side D-11', juice: 'Citrus Glow', status: 'delivered', time: '7:18 AM' }], status: 'completed', startedAt: '6:50 AM' },
+        { id: 'RUN-003', driver: 'Vikram Singh', phone: '9871234560', zone: 'North Hills', drops: [{ customer: 'Sofia Miller', address: 'North Hills C-09', juice: 'Beet Rooted', status: 'pending', time: '—' }, { customer: 'James Lin', address: 'North Hills E-03', juice: 'Green Vitality', status: 'pending', time: '—' }], status: 'pending', startedAt: '—' }
+      ],
+      mockProcurement: [
+        { ingredient: 'Kale', unit: 'kg', qtyNeeded: 2.4, pricePerUnit: 60, forProduct: 'Green Vitality', bottles: 8, currentStock: 1.5 },
+        { ingredient: 'Spinach', unit: 'kg', qtyNeeded: 1.6, pricePerUnit: 40, forProduct: 'Green Vitality', bottles: 8, currentStock: 0.5 },
+        { ingredient: 'Green Apple', unit: 'kg', qtyNeeded: 2.0, pricePerUnit: 120, forProduct: 'Green Vitality', bottles: 8, currentStock: 0 },
+        { ingredient: 'Lemon', unit: 'pcs', qtyNeeded: 8, pricePerUnit: 5, forProduct: 'Green Vitality', bottles: 8, currentStock: 2 },
+        { ingredient: 'Ginger', unit: 'gm', qtyNeeded: 200, pricePerUnit: 0.3, forProduct: 'Green Vitality', bottles: 8, currentStock: 50 },
+        { ingredient: 'Orange', unit: 'kg', qtyNeeded: 3.0, pricePerUnit: 80, forProduct: 'Citrus Glow', bottles: 6, currentStock: 1.0 },
+        { ingredient: 'Grapefruit', unit: 'kg', qtyNeeded: 1.5, pricePerUnit: 150, forProduct: 'Citrus Glow', bottles: 6, currentStock: 0.5 },
+        { ingredient: 'Turmeric', unit: 'gm', qtyNeeded: 120, pricePerUnit: 0.4, forProduct: 'Citrus Glow', bottles: 6, currentStock: 500 },
+        { ingredient: 'Beetroot', unit: 'kg', qtyNeeded: 2.5, pricePerUnit: 40, forProduct: 'Beet Rooted', bottles: 5, currentStock: 5.0 },
+        { ingredient: 'Blueberry', unit: 'gm', qtyNeeded: 500, pricePerUnit: 1.2, forProduct: 'Beet Rooted', bottles: 5, currentStock: 100 },
+        { ingredient: 'Apple', unit: 'kg', qtyNeeded: 1.5, pricePerUnit: 120, forProduct: 'Beet Rooted', bottles: 5, currentStock: 0 },
+        { ingredient: 'Mint', unit: 'bunch', qtyNeeded: 5, pricePerUnit: 10, forProduct: 'Beet Rooted', bottles: 5, currentStock: 2 }
+      ],
+      mockInventory: [
+        { id: 'INV-001', item: 'Fresh Spinach', category: 'Vegetables', currentStock: '12 kg', minLevel: '15 kg', status: 'low' },
+        { id: 'INV-002', item: 'Organic Apples', category: 'Fruits', currentStock: '85 kg', minLevel: '40 kg', status: 'optimal' },
+        { id: 'INV-003', item: 'Glass Bottles (500ml)', category: 'Packaging', currentStock: '450 units', minLevel: '200 units', status: 'optimal' },
+        { id: 'INV-004', item: 'Raw Ginger', category: 'Vegetables', currentStock: '2 kg', minLevel: '5 kg', status: 'critical' }
+      ],
+      mockPurchases: [
+        { _id: 'mock_1', invoiceNumber: 'INV-001', supplier: 'Local Greens Co.', date: new Date().toISOString(), totalAmount: 450, paymentStatus: 'paid', documentUrl: '/dummy', items: [{ ingredientId: { name: 'Kale', unit: 'kg' }, quantity: 5, pricePaid: 300 }] }
+      ],
 
       // ---- Testimonials Data ----
       testimonials: [
@@ -335,6 +447,11 @@ const useStore = create<AppStore>()(
       products: [],
 
       fetchProducts: async () => {
+        if (!get().isLiveMode) {
+          set({ products: get().adminData.inventory, isBackendConnected: false });
+          return;
+        }
+
         try {
           const res = await fetch(`${API_URL}/products`);
           const data = await res.json();
@@ -342,7 +459,7 @@ const useStore = create<AppStore>()(
             set({ products: data.products, isBackendConnected: true });
           }
         } catch {
-          set({ isBackendConnected: false });
+          set({ isBackendConnected: false, products: get().adminData.inventory });
         }
       },
 
@@ -431,6 +548,22 @@ const useStore = create<AppStore>()(
       },
 
       createSubscription: async (schedule, deliveryAddress) => {
+        if (!get().isLiveMode) {
+          const mockSub: Subscription = {
+            _id: `sub_mock_${Date.now()}`,
+            schedule: schedule.map((s: any) => ({
+               dayOfWeek: s.dayOfWeek,
+               product: s.productId,
+               isPaused: false
+            })),
+            status: 'active',
+            deliveryAddress: deliveryAddress,
+            timeSlot: '7:00 - 8:00 AM'
+          };
+          set({ subscription: mockSub });
+          return;
+        }
+
         const { token } = get();
         if (!token) throw new Error('Not authenticated');
         set({ isLoading: true });
@@ -550,17 +683,165 @@ const useStore = create<AppStore>()(
 
       // ---- Admin Data ----
       adminData: {
-        subscribers: [],
-        inventory: [],
-        allOrders: [],
+        subscribers: [
+          {
+            _id: 'sub_1', name: 'Alex Johnson', email: 'alex.j@icloud.com', phone: '9876543210',
+            role: 'user', isActive: true, initials: 'AJ', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange',
+            plan: 'Daily Vitality Pro', planBg: 'bg-primary/10', planColor: 'text-vibrant-orange',
+            preferences: ['bg-orange-400', 'bg-green-400', 'bg-red-400'], nextRenewal: 'Nov 24, 2024'
+          },
+          {
+            _id: 'sub_2', name: 'Sofia Miller', email: 'sofia@design.co', phone: '9123456780',
+            role: 'user', isActive: true, initials: 'SM', avatarBg: 'bg-green-100', avatarColor: 'text-green-600',
+            plan: 'Weekend Refresh', planBg: 'bg-secondary-container/50', planColor: 'text-on-secondary-container',
+            preferences: ['bg-green-400', 'bg-yellow-400'], nextRenewal: 'Nov 28, 2024'
+          },
+        ],
+        inventory: [
+          {
+            _id: 'prod_1', name: 'Green Vitality', price: 85, category: 'Immunity', isActive: true, stock: 142, stockLevel: 'ok',
+            description: 'A powerful blend of alkalizing greens and roots, designed to flush toxins and rebuild cellular strength.',
+            ingredients: ['Kale', 'Spinach', 'Green Apple', 'Lemon', 'Ginger'],
+            benefits: ['🌿 Anti-Inflammatory', '🛡️ Cellular Defense', '🧬 Gut Health'],
+            detailedBenefits: [
+              { title: 'Anti-Inflammatory Power', description: 'Ginger and leafy greens work synergistically to reduce systemic inflammation and soothe digestion.' },
+              { title: 'Cellular Defense', description: 'High in Vitamin C from lemon and green apple, fortifying your immune system against daily stressors.' },
+              { title: 'Gut Health', description: 'Rich in soluble fiber which acts as a prebiotic, nourishing your microbiome for better nutrient absorption.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_1', ingredientName: 'Kale', qtyPerBottle: 0.3, unit: 'kg' },
+              { ingredientId: 'ing_2', ingredientName: 'Spinach', qtyPerBottle: 0.2, unit: 'kg' },
+              { ingredientId: 'ing_3', ingredientName: 'Green Apple', qtyPerBottle: 0.25, unit: 'kg' },
+              { ingredientId: 'ing_4', ingredientName: 'Lemon', qtyPerBottle: 1, unit: 'pcs' },
+              { ingredientId: 'ing_5', ingredientName: 'Ginger', qtyPerBottle: 25, unit: 'gm' },
+            ],
+            recipeInstructions: [
+              'Wash the kale and spinach thoroughly in cold water.',
+              'Juice the green apples and lemon first to extract base liquids.',
+              'Slowly process the leafy greens, followed by the ginger.',
+              'Strain to remove micro-fibers for a smooth texture.'
+            ],
+            image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1QuAZLQgXCBHxy0BcEKhRglzerfWWC-1vPn7NXZciyOqV_MZgInCEWjivoDmzw_XLtny0YeXfJoFb7zrHBi3BTX-8QVbJRBdjeAPbKJnhIZLPQXlrJ4kUlrFihd_qCx4lbucJ6uXSk0tXYwFuQb2-gr_4zjfE1XZ-0Bf5AoVu12NBnleBwT9AbcdsNO2bzPcNzX8rEN4tdP6e14o9wZrdNAnKYZPERcoTEOnO32z3afdKSme0XJXKoEMDo-gB7Byc5EnnQIwmZwc',
+          },
+          {
+            _id: 'prod_2', name: 'Citrus Glow', price: 79, category: 'Energy', isActive: true, stock: 24, stockLevel: 'low',
+            description: 'A vibrant, metabolism-boosting citrus blend packed with vitamin C and anti-inflammatory turmeric.',
+            ingredients: ['Orange', 'Grapefruit', 'Turmeric', 'Cayenne'],
+            benefits: ['✨ Skin Radiance', '⚡ Natural Energy', '💊 High Vitamin C'],
+            detailedBenefits: [
+              { title: 'Skin Radiance', description: 'Massive doses of Vitamin C promote collagen production, leading to glowing, elastic skin.' },
+              { title: 'Natural Energy', description: 'Natural sugars from citrus combined with the metabolic kick of cayenne provide sustained, clean energy.' },
+              { title: 'Immune Boost', description: 'Turmeric and grapefruit offer a dual-action defense mechanism against pathogens and free radicals.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_6', ingredientName: 'Orange', qtyPerBottle: 0.5, unit: 'kg' },
+              { ingredientId: 'ing_7', ingredientName: 'Grapefruit', qtyPerBottle: 0.25, unit: 'kg' },
+              { ingredientId: 'ing_8', ingredientName: 'Turmeric', qtyPerBottle: 20, unit: 'gm' },
+              { ingredientId: 'ing_9', ingredientName: 'Cayenne', qtyPerBottle: 5, unit: 'gm' },
+            ],
+            recipeInstructions: [
+              'Peel all citrus fruits (Orange & Grapefruit), leaving minor pith for antioxidants.',
+              'Juice the citrus fruits to yield a vibrant base.',
+              'Whisk in turmeric powder and cayenne precisely to prevent clumping.',
+              'Bottle immediately to prevent Vitamin C oxidation.'
+            ],
+            image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBbA9CAicGuI3_qnblBkoS5JUaLGJiLMkMgWW-UhG8AGeY2G4HAMMHz2LmIpvAX8BD2ZC0GqHCeI0iY5ostmkp69mQheBa86_T9N-QhcOXWjJfkZblGf7Xk0L3yIPlpqysdbQIXRcR3g6GPrg7JlWwAHm-wR9AoJOCCirdtxNpCLmHdH20oQ6n2njZ0YxCLDAk1_zkwHS5VKKAzyxxFvxwAfoqCPI5jgkulkKw6ePnVabZrU_A5T1CQ9jRnJXF0Dq27zR1n7e3oPdU',
+          },
+          {
+            _id: 'prod_3', name: 'Beet Rooted', price: 90, category: 'Detox', isActive: true, stock: 88, stockLevel: 'ok',
+            description: 'An earthy, stamina-building root blend that improves blood flow and delivers rapid hydration.',
+            ingredients: ['Beetroot', 'Blueberry', 'Apple', 'Mint'],
+            benefits: ['🩸 Iron Rich', '🏃‍♂️ Stamina Boost', '💧 Cellular Hydration'],
+            detailedBenefits: [
+              { title: 'Iron Rich & Blood Flow', description: 'Beetroot is famous for increasing nitric oxide in the blood, relaxing blood vessels and improving circulation.' },
+              { title: 'Stamina Boost', description: 'The unique natural nitrates provide a measurable increase in physical endurance and oxygen utilization.' },
+              { title: 'Antioxidant Load', description: 'Blueberries add a massive dose of anthocyanins, fighting oxidative stress and cellular aging.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_10', ingredientName: 'Beetroot', qtyPerBottle: 0.5, unit: 'kg' },
+              { ingredientId: 'ing_11', ingredientName: 'Blueberry', qtyPerBottle: 100, unit: 'gm' },
+              { ingredientId: 'ing_3', ingredientName: 'Apple', qtyPerBottle: 0.3, unit: 'kg' },
+              { ingredientId: 'ing_12', ingredientName: 'Mint', qtyPerBottle: 1, unit: 'bunch' },
+            ],
+            recipeInstructions: [
+              'Trim and vigorously scrub the beetroots to remove dirt.',
+              'Process apples and beetroots through the heavy press.',
+              'Crush the blueberries alongside the mint for infused flavor.',
+              'Mix well. Ensure deep red hue without separation.'
+            ],
+            image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIrfiBzFWaXV4otHis8tCw4zQvYiuhbSV-LBjN1kSlQTzUDlDFg4gW1vjSDrpxjNh_YAIgmwhL0skxCoTSyL5OFVN3as4AR_fFgJoWIHnBgC6WfJmRkgVGEnpBIfabjNRsPPVQ2qMrBM2dMcfJ_JsS2_kkT9FOQ_Kv8lAG6KcGMHgljGIoUuqyineCTxBz-1fX8JtkmvScLUQt9ha9RmprJbTCrMCZQpO8SvsRnT7dnU5Y_KAbefSPmtlhYqohE1lWjUmpnjvasf8',
+          },
+        ],
+        allOrders: [
+          {
+            _id: 'ord_1', user: { name: 'Sarah Jenkins', phone: '9900112233', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDZlOiPfUUaPcxaPfkqxhbbeQheAZii9NymCCZEc-4NcgsLxLjyeEeb0VitHyAV46hO03wr2mCf4s5ajqZ41qiIwmrdKwUmYoYqPufAFtyZX7Fej06FGgBHfqhJYXwkvZLusJqRw1jI7pL2WHqo0NZfBt5PexlAOgkpuoTuFMBsGSRqfQXBpz5qyG_c8Gj9DoxIp0Sn1H3GqFP9_Y-ZgxLsTaNA2HHHif5e6OreQSKD8LCtwq6gND00FsbjzVhT1FUcFseLId0pDGU' },
+            items: [{ product: { name: '3x Green Vitality, 2x Citrus Glow' }, quantity: 5, price: 85 }],
+            deliveryDate: new Date().toISOString(), status: 'delivered', paymentStatus: 'paid',
+            totalAmount: 255, deliveryAddress: 'Downtown B-12'
+          },
+          {
+            _id: 'ord_2', user: { name: 'Marcus Chen', phone: '9988776655', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA_qAv5HZPACLIluzoUao6Qp-UUN9J-U5yr75uC2Lf_UFhuVSfPOx0m0MR5hEbOKZRNauwzgZjtccwCpmcqProRgrpM801CJwB5wUKOtrR14kmoa4Uv170agORUvWOMayx4k2C3wXzLxQUyNJd8t-mSOBtDNEEoZ7lOmxqOyM866nPfw8qJ13S3RfkXV_IuavjoObWuo--fRtGvJ5CF6irTTHFDSijVkxH73xhQEZAsfc09W9XXFTt3rqJ5eb1OJFuXREwWWuqXl1c' },
+            items: [{ product: { name: '5x Morning Detox Pack' }, quantity: 5, price: 90 }],
+            deliveryDate: new Date().toISOString(), status: 'out_for_delivery', paymentStatus: 'paid',
+            totalAmount: 450, deliveryAddress: 'West Side A-04'
+          },
+          {
+            _id: 'ord_3', user: { name: 'Elena Rodriguez', phone: '9876501234', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBJF3WnR0KgzK2-c6uk_kWLWgsOEBzPhukZifn9PA-aHURcVQO0DMu1AeMFPb_sLClQBo9_wDqS7k5e21_Wk-q3I6seLKLg-UYD-SsF9myaRHUxPzIK0w7HaW5PSDelD0A0LFFtPjErXuA9ZrBNLLZRYvdFxnVUFpspGX4tf_tUf123YARyHlFmALLgrJfE122JUqf811wV7ASGHgV6vm7HDD5ojXNozfrM5ZL3gHyy4I7s7yC2v7BGedJujVC6u-KGqP8K14vzFWs' },
+            items: [{ product: { name: 'Weekly Renewal Plan' }, quantity: 1, price: 500 }],
+            deliveryDate: new Date().toISOString(), status: 'pending', paymentStatus: 'paid',
+            totalAmount: 500, deliveryAddress: 'North Hills C-09'
+          },
+        ],
         procurement: [],
         recipes: [],
-        stats: null,
+        suppliers: [
+          { _id: 'sup_1', name: 'Local Greens Co.', contactName: 'John Farmer', phone: '123-456-7890', isActive: true, materials: ['ing_1', 'ing_2', 'ing_3', 'ing_5', 'ing_10', 'ing_12'] },
+          { _id: 'sup_2', name: 'Orchard Farms', contactName: 'Alice Orchard', phone: '098-765-4321', isActive: true, materials: ['ing_3', 'ing_4', 'ing_6', 'ing_7', 'ing_10'] },
+          { _id: 'sup_3', name: 'Spice Importers', contactName: 'Bob Spice', phone: '555-666-7777', isActive: true, materials: ['ing_5', 'ing_8', 'ing_9'] },
+          { _id: 'sup_4', name: 'Berry Best Farm', contactName: 'Cathy Berry', phone: '111-222-3333', isActive: true, materials: ['ing_11'] },
+        ],
+        rawMaterials: [
+          { _id: 'ing_1', name: 'Kale', unit: 'kg', marketPrice: 60, qtyAvailable: 2.5, minStockLevel: 1.5, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_2', name: 'Spinach', unit: 'kg', marketPrice: 40, qtyAvailable: 1.0, minStockLevel: 2.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_3', name: 'Green Apple', unit: 'kg', marketPrice: 120, qtyAvailable: 5.0, minStockLevel: 3.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_4', name: 'Lemon', unit: 'pcs', marketPrice: 5, qtyAvailable: 50, minStockLevel: 30, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_5', name: 'Ginger', unit: 'gm', marketPrice: 0.3, qtyAvailable: 500, minStockLevel: 200, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_6', name: 'Orange', unit: 'kg', marketPrice: 80, qtyAvailable: 2.0, minStockLevel: 4.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_7', name: 'Grapefruit', unit: 'kg', marketPrice: 150, qtyAvailable: 1.5, minStockLevel: 2.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_8', name: 'Turmeric', unit: 'gm', marketPrice: 0.4, qtyAvailable: 1000, minStockLevel: 500, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_9', name: 'Cayenne', unit: 'gm', marketPrice: 0.5, qtyAvailable: 800, minStockLevel: 300, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_10', name: 'Beetroot', unit: 'kg', marketPrice: 40, qtyAvailable: 10.0, minStockLevel: 5.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_11', name: 'Blueberry', unit: 'gm', marketPrice: 1.2, qtyAvailable: 200, minStockLevel: 500, supplier: { _id: 'sup_4', name: 'Berry Best Farm' }, isActive: true },
+          { _id: 'ing_12', name: 'Mint', unit: 'bunch', marketPrice: 10, qtyAvailable: 15, minStockLevel: 10, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true }
+        ],
+        stats: {
+          activeRhythms: 18,
+          todayDemand: 22,
+          walletLiability: 4850,
+          realizedRevenue: 12600,
+          totalDeposits: 17450,
+          pauseRate: 11,
+          pausedUsers: 2,
+          pressingList: [
+            { name: 'Green Vitality', qty: 8, price: 85 },
+            { name: 'Citrus Glow', qty: 6, price: 79 },
+            { name: 'Beet Rooted', qty: 5, price: 90 },
+            { name: 'Tropical Sunrise', qty: 3, price: 95 },
+          ],
+          deliverySnapshot: {
+            totalDrops: 22,
+            zones: [
+              { name: 'Downtown', drops: 9 },
+              { name: 'West Side', drops: 7 },
+              { name: 'North Hills', drops: 6 },
+            ]
+          }
+        },
       },
 
       fetchAdminData: async (type) => {
-        const { token } = get();
-        if (!token) return;
+        const { token, isLiveMode } = get();
+        if (!token || !isLiveMode) return;
         try {
           let endpoint = '';
           switch (type) {
@@ -578,21 +859,25 @@ const useStore = create<AppStore>()(
           const data = await res.json();
 
           if (data.success) {
+            // Check again if live mode has changed while fetching
+            if(!get().isLiveMode) return;
+
             set((state) => ({
               adminData: {
                 ...state.adminData,
-                ...(type === 'subscribers' ? { subscribers: data.subscribers } : {}),
-                ...(type === 'inventory' ? { inventory: data.ingredients } : {}),
-                ...(type === 'orders' ? { allOrders: data.orders } : {}),
-                ...(type === 'stats' ? { stats: data.stats } : {}),
+                // Only replace if the API actually returned an array/data, otherwise keep existing dummy data
+                ...(type === 'subscribers' && data.subscribers?.length > 0 ? { subscribers: data.subscribers } : {}),
+                ...(type === 'inventory' && data.ingredients?.length > 0 ? { inventory: data.ingredients } : {}),
+                ...(type === 'orders' && data.orders?.length > 0 ? { allOrders: data.orders } : {}),
+                ...(type === 'stats' && data.stats ? { stats: data.stats } : {}),
                 ...(type === 'procurement' ? { procurement: data.ingredients || [] } : {}),
-                ...(type === 'recipes' ? { recipes: data.recipes } : {}),
+                ...(type === 'recipes' && data.recipes?.length > 0 ? { recipes: data.recipes } : {}),
               },
               isBackendConnected: true
             }));
           }
         } catch {
-          set({ isBackendConnected: false });
+          // API failed — keep default dummy data, don't overwrite
         }
       },
 
@@ -636,15 +921,63 @@ const useStore = create<AppStore>()(
         }
       },
 
+      // ---- Admin Settings ----
+      adminSettings: null,
+      fetchAdminSettings: async () => {
+        const { token } = get();
+        if (!token) return;
+        try {
+          const res = await fetch(`${API_URL}/admin/settings`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (data.success) {
+            set({ adminSettings: data.settings });
+          }
+        } catch (e) {
+          console.error("Fetch settings failed", e);
+        }
+      },
+      updateAdminSettings: async (payload: any) => {
+        const { token } = get();
+        if (!token) return;
+        try {
+          const res = await fetch(`${API_URL}/admin/settings`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+            set({ adminSettings: data.settings });
+          } else {
+            throw new Error(data.error);
+          }
+        } catch (e) {
+          console.error("Update settings failed", e);
+          throw e;
+        }
+      },
+
       // ---- Checkout & Wallet ----
       checkoutData: null,
       setCheckoutData: (data) => set({ checkoutData: data }),
 
       createTopUpOrder: async (amount) => {
+        if (!get().isLiveMode) {
+          return { id: `order_mock_${Date.now()}`, amount: amount * 100, currency: 'INR' };
+        }
         return await walletService.createTopupOrder(amount);
       },
 
       verifyTopUp: async (paymentData) => {
+        if (!get().isLiveMode) {
+          // Mock successful verification
+          return;
+        }
         const data = await walletService.verifyTopup(paymentData);
         if (!data.success) throw new Error(data.error);
 
@@ -684,6 +1017,29 @@ const useStore = create<AppStore>()(
             headers: {
               Authorization: `Bearer ${token}`
             },
+          });
+          const result = await res.json();
+          if (result.success) {
+            await get().fetchMe();
+          } else {
+            throw new Error(result.error);
+          }
+        } catch (e: any) {
+          throw e;
+        }
+      },
+
+      updateDietaryPreferences: async (preferences: string[]) => {
+        const { token } = get();
+        if (!token) return;
+        try {
+          const res = await fetch(`${API_URL}/auth/dietary`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ dietaryPreferences: preferences }),
           });
           const result = await res.json();
           if (result.success) {

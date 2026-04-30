@@ -11,6 +11,9 @@ export interface ISubscription extends Document {
   schedule: IScheduleDay[];
   deliveryAddress: string;
   timeSlot: string;
+  subscriberId?: string;
+  dietaryPreferences?: string[];
+  dietaryNote?: string;
   status: 'active' | 'paused' | 'paused_balance' | 'cancelled';
   startDate: Date;
   createdAt: Date;
@@ -32,6 +35,9 @@ const subscriptionSchema = new Schema<ISubscription>(
     schedule: { type: [scheduleDaySchema], required: true, validate: [(v: IScheduleDay[]) => v.length === 7, 'Schedule must have all 7 days'] },
     deliveryAddress: { type: String, required: true },
     timeSlot: { type: String, default: '7:00 - 8:00 AM' },
+    subscriberId: { type: String, unique: true, sparse: true },
+    dietaryPreferences: [{ type: String }],
+    dietaryNote: { type: String, default: '' },
     status: { type: String, enum: ['active', 'paused', 'paused_balance', 'cancelled'], default: 'active' },
     startDate: { type: Date, default: Date.now },
   },
@@ -40,6 +46,14 @@ const subscriptionSchema = new Schema<ISubscription>(
 
 // One active subscription per user
 subscriptionSchema.index({ user: 1, status: 1 });
+
+// Auto-generate subscriberId for new subscriptions
+subscriptionSchema.pre('save', async function () {
+  if (this.isNew && !this.subscriberId) {
+    const count = await mongoose.models.Subscription?.countDocuments({ subscriberId: { $exists: true, $ne: null } }) || 0;
+    this.subscriberId = `SUB-${String(count + 1).padStart(3, '0')}`;
+  }
+});
 
 const SubscriptionModel: Model<ISubscription> = mongoose.models.Subscription || mongoose.model<ISubscription>('Subscription', subscriptionSchema);
 export default SubscriptionModel;

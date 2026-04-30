@@ -47,6 +47,8 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+
+
 // Don't return password in JSON
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
