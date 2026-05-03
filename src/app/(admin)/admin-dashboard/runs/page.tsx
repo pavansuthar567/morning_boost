@@ -395,24 +395,35 @@ export default function AdminRunsPage() {
                         {societyDrops.map((drop: any) => (
                           <tr key={drop._originalIndex} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-5 py-3">
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-bold text-slate-800">{drop.subscriberName}</p>
-                                {drop.notes && (
-                                  <div className="relative group/note inline-flex items-center print:hidden">
-                                    <span className="material-symbols-outlined text-[14px] text-amber-500 cursor-help">info</span>
-                                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-[200px] px-3 py-1.5 bg-slate-800 text-white text-[11px] leading-tight rounded opacity-0 group-hover/note:opacity-100 pointer-events-none transition-opacity z-10 whitespace-normal font-medium shadow-xl">
-                                      {drop.notes}
-                                      <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-800"></div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-[10px] text-slate-400">{drop.phone}</p>
-                              {drop.notes && (
-                                <div className="hidden print:block text-[9px] font-bold text-amber-600 mt-0.5 border-l-2 border-amber-400 pl-1.5 whitespace-normal">
-                                  Note: {drop.notes}
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full overflow-hidden bg-orange-100 flex items-center justify-center font-bold text-primary text-sm shrink-0">
+                                  {drop.avatar ? (
+                                    <img alt="Subscriber" className="w-full h-full object-cover" src={drop.avatar} />
+                                  ) : (
+                                    drop.subscriberName?.charAt(0) || 'U'
+                                  )}
                                 </div>
-                              )}
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-sm font-bold text-slate-800">{drop.subscriberName}</p>
+                                    {drop.notes && (
+                                      <div className="relative group/note inline-flex items-center print:hidden">
+                                        <span className="material-symbols-outlined text-[14px] text-amber-500 cursor-help">info</span>
+                                        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-[200px] px-3 py-1.5 bg-slate-800 text-white text-[11px] leading-tight rounded opacity-0 group-hover/note:opacity-100 pointer-events-none transition-opacity z-10 whitespace-normal font-medium shadow-xl">
+                                          {drop.notes}
+                                          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-800"></div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-slate-400">{drop.phone}</p>
+                                  {drop.notes && (
+                                    <div className="hidden print:block text-[9px] font-bold text-amber-600 mt-0.5 border-l-2 border-amber-400 pl-1.5 whitespace-normal">
+                                      Note: {drop.notes}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </td>
                             <td className="px-5 py-3 text-sm font-medium text-slate-600">{drop.flatNo}</td>
                             <td className="px-5 py-3">

@@ -27,9 +27,12 @@ export async function POST(req: NextRequest) {
 
     // Create user
     const hashedPassword = await hashPassword(password);
+    const randomAvatar = `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}`;
+    
     const user = await User.create({
       name,
       phone,
+      avatar: randomAvatar,
       password: hashedPassword,
       email: email || undefined,
       role: 'user',

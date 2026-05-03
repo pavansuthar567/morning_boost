@@ -26,7 +26,7 @@ function calculateBonus(amount: number): number {
 
 export default function Checkout() {
   const router = useRouter();
-  const { user, checkoutData, setCheckoutData, createTopUpOrder, verifyTopUp, addAddress, createSubscription, wallet, isLiveMode } = useStore();
+  const { user, checkoutData, setCheckoutData, createTopUpOrder, verifyTopUp, addAddress, createSubscription, wallet, isLiveMode, config } = useStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -471,7 +471,10 @@ export default function Checkout() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Society / Building Name</label>
-                    <input required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})} placeholder="e.g. Green Valley Soc." type="text" />
+                    <select required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})}>
+                      <option value="">Select Society...</option>
+                      {config.societies.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Flat / House No.</label>
@@ -483,7 +486,10 @@ export default function Checkout() {
                   </div>
                   <div className="col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Area / Area Landmark</label>
-                    <input required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})} placeholder="Opp. Central Park" type="text" />
+                    <select required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})}>
+                      <option value="">Select Area...</option>
+                      {config.areas.map((a: string) => <option key={a} value={a}>{a}</option>)}
+                    </select>
                   </div>
                 </div>
                 <button 

@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface IDeliveryDrop {
   subscriberId: mongoose.Types.ObjectId;
   subscriberName: string;
+  avatar?: string;
   phone: string;
   society: string;
   flatNo: string;
@@ -26,6 +27,7 @@ export interface IDeliveryRun extends Document {
 const deliveryDropSchema = new Schema<IDeliveryDrop>({
   subscriberId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   subscriberName: { type: String, required: true },
+  avatar: { type: String },
   phone: { type: String, required: true },
   society: { type: String, required: true },
   flatNo: { type: String, required: true },

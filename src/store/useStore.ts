@@ -281,10 +281,10 @@ const useStore = create<AppStore>()(
           date: new Date().toISOString(),
           status: 'in_progress',
           drops: [
-            { subscriberId: 'SUB-001', subscriberName: 'Sarah Jenkins', phone: '9900112233', society: 'Sun City Row House', flatNo: 'B-12', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Mild allergy to raw ginger. Please ring the bell.' },
-            { subscriberId: 'SUB-004', subscriberName: 'Sofia Miller', phone: '9123456780', society: 'Sun City Row House', flatNo: 'D-11', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Citrus Glow', status: 'delivered', deliveredAt: '7:24 AM' },
-            { subscriberId: 'SUB-002', subscriberName: 'Marcus Chen', phone: '9988776655', society: 'Madhav Villa', flatNo: 'A-04', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted', status: 'delivered', deliveredAt: '7:05 AM', notes: 'Leave at the door.' },
-            { subscriberId: 'SUB-005', subscriberName: 'Priya Patel', phone: '9876543210', society: 'Madhav Villa', flatNo: 'C-01', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'skipped', deliveredAt: null, notes: 'Insufficient Balance. Skipped.' },
+            { subscriberId: 'SUB-001', subscriberName: 'Sarah Jenkins', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sarah+Jenkins', phone: '9900112233', society: 'Sun City Row House', flatNo: 'B-12', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Mild allergy to raw ginger. Please ring the bell.' },
+            { subscriberId: 'SUB-004', subscriberName: 'Sofia Miller', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sofia+Miller', phone: '9123456780', society: 'Sun City Row House', flatNo: 'D-11', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Citrus Glow', status: 'delivered', deliveredAt: '7:24 AM' },
+            { subscriberId: 'SUB-002', subscriberName: 'Marcus Chen', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Marcus+Chen', phone: '9988776655', society: 'Madhav Villa', flatNo: 'A-04', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted', status: 'delivered', deliveredAt: '7:05 AM', notes: 'Leave at the door.' },
+            { subscriberId: 'SUB-005', subscriberName: 'Priya Patel', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Priya+Patel', phone: '9876543210', society: 'Madhav Villa', flatNo: 'C-01', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'skipped', deliveredAt: null, notes: 'Insufficient Balance. Skipped.' },
           ],
           createdBy: 'admin'
         }
@@ -793,19 +793,19 @@ const useStore = create<AppStore>()(
         ],
         allOrders: [
           {
-            _id: 'ord_1', user: { name: 'Sarah Jenkins', phone: '9900112233', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDZlOiPfUUaPcxaPfkqxhbbeQheAZii9NymCCZEc-4NcgsLxLjyeEeb0VitHyAV46hO03wr2mCf4s5ajqZ41qiIwmrdKwUmYoYqPufAFtyZX7Fej06FGgBHfqhJYXwkvZLusJqRw1jI7pL2WHqo0NZfBt5PexlAOgkpuoTuFMBsGSRqfQXBpz5qyG_c8Gj9DoxIp0Sn1H3GqFP9_Y-ZgxLsTaNA2HHHif5e6OreQSKD8LCtwq6gND00FsbjzVhT1FUcFseLId0pDGU' },
+            _id: 'ord_1', user: { name: 'Sarah Jenkins', phone: '9900112233', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sarah+Jenkins' },
             items: [{ product: { name: '3x Green Vitality, 2x Citrus Glow' }, quantity: 5, price: 85 }],
             deliveryDate: new Date().toISOString(), status: 'delivered', paymentStatus: 'paid',
             totalAmount: 255, deliveryAddress: 'Downtown B-12'
           },
           {
-            _id: 'ord_2', user: { name: 'Marcus Chen', phone: '9988776655', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA_qAv5HZPACLIluzoUao6Qp-UUN9J-U5yr75uC2Lf_UFhuVSfPOx0m0MR5hEbOKZRNauwzgZjtccwCpmcqProRgrpM801CJwB5wUKOtrR14kmoa4Uv170agORUvWOMayx4k2C3wXzLxQUyNJd8t-mSOBtDNEEoZ7lOmxqOyM866nPfw8qJ13S3RfkXV_IuavjoObWuo--fRtGvJ5CF6irTTHFDSijVkxH73xhQEZAsfc09W9XXFTt3rqJ5eb1OJFuXREwWWuqXl1c' },
+            _id: 'ord_2', user: { name: 'Marcus Chen', phone: '9988776655', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Marcus+Chen' },
             items: [{ product: { name: '5x Morning Detox Pack' }, quantity: 5, price: 90 }],
             deliveryDate: new Date().toISOString(), status: 'out_for_delivery', paymentStatus: 'paid',
             totalAmount: 450, deliveryAddress: 'West Side A-04'
           },
           {
-            _id: 'ord_3', user: { name: 'Elena Rodriguez', phone: '9876501234', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBJF3WnR0KgzK2-c6uk_kWLWgsOEBzPhukZifn9PA-aHURcVQO0DMu1AeMFPb_sLClQBo9_wDqS7k5e21_Wk-q3I6seLKLg-UYD-SsF9myaRHUxPzIK0w7HaW5PSDelD0A0LFFtPjErXuA9ZrBNLLZRYvdFxnVUFpspGX4tf_tUf123YARyHlFmALLgrJfE122JUqf811wV7ASGHgV6vm7HDD5ojXNozfrM5ZL3gHyy4I7s7yC2v7BGedJujVC6u-KGqP8K14vzFWs' },
+            _id: 'ord_3', user: { name: 'Elena Rodriguez', phone: '9876501234', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Elena+Rodriguez' },
             items: [{ product: { name: 'Weekly Renewal Plan' }, quantity: 1, price: 500 }],
             deliveryDate: new Date().toISOString(), status: 'pending', paymentStatus: 'paid',
             totalAmount: 500, deliveryAddress: 'North Hills C-09'

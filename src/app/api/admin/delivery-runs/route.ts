@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
       drops.push({
         subscriberId: user._id,
         subscriberName: user.name,
+        avatar: user.avatar,
         phone: user.phone,
         society: defaultAddr.society || '',
         flatNo: defaultAddr.flatNo || '',
