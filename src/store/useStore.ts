@@ -202,6 +202,8 @@ interface AppStore {
   config: {
     juiceOptions: string[];
     dietOptions: string[];
+    areas: string[];
+    societies: string[];
   };
 
   // Demo Data (Mock)
@@ -210,6 +212,7 @@ interface AppStore {
   mockProcurement: any[];
   mockInventory: any[];
   mockPurchases: any[];
+  mockDeliveryRuns: any[];
 }
 
 const useStore = create<AppStore>()(
@@ -224,28 +227,30 @@ const useStore = create<AppStore>()(
       // ---- Config & Constants ----
       config: {
         juiceOptions: ['Green Vitality', 'Citrus Glow', 'Beet Rooted'],
-        dietOptions: ['Vegan', 'No Ginger', 'No Sugar', 'Keto', 'Gluten-Free', 'No Dairy']
+        dietOptions: ['Vegan', 'No Ginger', 'No Sugar', 'Keto', 'Gluten-Free', 'No Dairy'],
+        areas: ['Dindoli'],
+        societies: ['Sun City Row House', 'Madhav Villa', 'Millenium Park']
       },
 
       // ---- Demo Data ----
       mockSubscribers: [
         {
-          id: 'SUB-001', name: 'Sarah Jenkins', phone: '9900112233', email: 'sarah@gmail.com', balance: 1250, status: 'active', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Citrus Glow' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Citrus Glow' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Citrus Glow' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 15, 2026', ltv: 12000, address: 'Downtown B-12, Green City', dietaryPreferences: ['No Ginger'], dietaryNote: 'Mild allergy to raw ginger', transactions: [
+          id: 'SUB-001', name: 'Sarah Jenkins', phone: '9900112233', email: 'sarah@gmail.com', balance: 1250, status: 'active', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Citrus Glow' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Citrus Glow' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Citrus Glow' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 15, 2026', ltv: 12000, address: 'Sun City Row House, B-12, Dindoli', dietaryPreferences: ['No Ginger'], dietaryNote: 'Mild allergy to raw ginger', transactions: [
             { type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Green Vitality' },
             { type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' },
             { type: 'topup', amount: 2000, description: 'Added via UPI', date: new Date(Date.now() - 86400000 * 3).toISOString(), eventType: 'wallet' },
             { type: 'status_paused', description: 'Subscription status changed from active to paused', date: new Date(Date.now() - 86400000 * 4).toISOString(), eventType: 'activity' }
           ], initials: 'SJ', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange'
         },
-        { id: 'SUB-002', name: 'Marcus Chen', phone: '9988776655', email: 'marcus@work.co', balance: 450, status: 'active', schedule: [{ day: 'Mon', juice: 'Beet Rooted' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Beet Rooted' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Beet Rooted' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 22, 2026', ltv: 3500, address: 'West Side A-04, Green City', dietaryPreferences: [], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted' }], initials: 'MC', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
-        { id: 'SUB-003', name: 'Elena Rodriguez', phone: '9876501234', email: 'elena@design.io', balance: 0, status: 'paused', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Feb 10, 2026', ltv: 8500, address: 'North Hills C-09, Green City', dietaryPreferences: ['Vegan'], dietaryNote: 'Strictly plant-based', transactions: [{ type: 'bonus', amount: 50, description: 'Empty Bottle Return', date: new Date(Date.now() - 86400000 * 5).toISOString(), eventType: 'wallet' }, { type: 'profile_updated', description: 'Admin updated subscriber profile and dietary preferences', date: new Date(Date.now() - 86400000 * 6).toISOString(), eventType: 'activity' }], initials: 'ER', avatarBg: 'bg-blue-100', avatarColor: 'text-blue-600' },
-        { id: 'SUB-004', name: 'Sofia Miller', phone: '9123456780', email: 'sofia@design.co', balance: 3400, status: 'active', schedule: [{ day: 'Mon', juice: 'Citrus Glow' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Citrus Glow' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Citrus Glow' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Jan 5, 2026', ltv: 18000, address: 'South Park D-11, Green City', dietaryPreferences: [], dietaryNote: '', transactions: [], initials: 'SM', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange' },
-        { id: 'SUB-005', name: 'James Lin', phone: '9871234560', email: 'jlin@software.co', balance: 85, status: 'paused_balance', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Apr 1, 2026', ltv: 1200, address: 'East End E-22, Green City', dietaryPreferences: ['No Sugar'], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' }], initials: 'JL', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
+        { id: 'SUB-002', name: 'Marcus Chen', phone: '9988776655', email: 'marcus@work.co', balance: 450, status: 'active', schedule: [{ day: 'Mon', juice: 'Beet Rooted' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Beet Rooted' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Beet Rooted' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 22, 2026', ltv: 3500, address: 'Madhav Villa, A-04, Dindoli', dietaryPreferences: [], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted' }], initials: 'MC', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
+        { id: 'SUB-003', name: 'Elena Rodriguez', phone: '9876501234', email: 'elena@design.io', balance: 0, status: 'paused', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Feb 10, 2026', ltv: 8500, address: 'Millenium Park, C-09, Dindoli', dietaryPreferences: ['Vegan'], dietaryNote: 'Strictly plant-based', transactions: [{ type: 'bonus', amount: 50, description: 'Empty Bottle Return', date: new Date(Date.now() - 86400000 * 5).toISOString(), eventType: 'wallet' }, { type: 'profile_updated', description: 'Admin updated subscriber profile and dietary preferences', date: new Date(Date.now() - 86400000 * 6).toISOString(), eventType: 'activity' }], initials: 'ER', avatarBg: 'bg-blue-100', avatarColor: 'text-blue-600' },
+        { id: 'SUB-004', name: 'Sofia Miller', phone: '9123456780', email: 'sofia@design.co', balance: 3400, status: 'active', schedule: [{ day: 'Mon', juice: 'Citrus Glow' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Citrus Glow' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Citrus Glow' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Jan 5, 2026', ltv: 18000, address: 'Sun City Row House, D-11, Dindoli', dietaryPreferences: [], dietaryNote: '', transactions: [], initials: 'SM', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange' },
+        { id: 'SUB-005', name: 'James Lin', phone: '9871234560', email: 'jlin@software.co', balance: 85, status: 'paused_balance', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Apr 1, 2026', ltv: 1200, address: 'Millenium Park, E-22, Dindoli', dietaryPreferences: ['No Sugar'], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' }], initials: 'JL', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
       ],
       mockRuns: [
-        { id: 'RUN-001', driver: 'Rajesh Kumar', phone: '9876543210', zone: 'Downtown', drops: [{ customer: 'Sarah Jenkins', address: 'Downtown B-12', juice: 'Green Vitality', status: 'delivered', time: '7:12 AM' }, { customer: 'Priya Sharma', address: 'Downtown A-05', juice: 'Citrus Glow', status: 'delivered', time: '7:24 AM' }, { customer: 'Amit Patel', address: 'Downtown C-08', juice: 'Green Vitality', status: 'in_transit', time: '—' }], status: 'in_progress', startedAt: '6:45 AM' },
-        { id: 'RUN-002', driver: 'Sunil Yadav', phone: '9988776655', zone: 'West Side', drops: [{ customer: 'Marcus Chen', address: 'West Side A-04', juice: 'Beet Rooted', status: 'delivered', time: '7:05 AM' }, { customer: 'Elena Rodriguez', address: 'West Side D-11', juice: 'Citrus Glow', status: 'delivered', time: '7:18 AM' }], status: 'completed', startedAt: '6:50 AM' },
-        { id: 'RUN-003', driver: 'Vikram Singh', phone: '9871234560', zone: 'North Hills', drops: [{ customer: 'Sofia Miller', address: 'North Hills C-09', juice: 'Beet Rooted', status: 'pending', time: '—' }, { customer: 'James Lin', address: 'North Hills E-03', juice: 'Green Vitality', status: 'pending', time: '—' }], status: 'pending', startedAt: '—' }
+        { id: 'RUN-001', driver: 'Rajesh Kumar', phone: '9876543210', zone: 'Sun City Row House', drops: [{ customer: 'Sarah Jenkins', address: 'B-12', juice: 'Green Vitality', status: 'delivered', time: '7:12 AM' }, { customer: 'Sofia Miller', address: 'D-11', juice: 'Citrus Glow', status: 'delivered', time: '7:24 AM' }], status: 'completed', startedAt: '6:45 AM' },
+        { id: 'RUN-002', driver: 'Sunil Yadav', phone: '9988776655', zone: 'Madhav Villa', drops: [{ customer: 'Marcus Chen', address: 'A-04', juice: 'Beet Rooted', status: 'delivered', time: '7:05 AM' }], status: 'completed', startedAt: '6:50 AM' },
+        { id: 'RUN-003', driver: 'Vikram Singh', phone: '9871234560', zone: 'Millenium Park', drops: [{ customer: 'Elena Rodriguez', address: 'C-09', juice: 'Green Vitality', status: 'pending', time: '—' }], status: 'pending', startedAt: '—' }
       ],
       mockProcurement: [
         { ingredient: 'Kale', unit: 'kg', qtyNeeded: 2.4, pricePerUnit: 60, forProduct: 'Green Vitality', bottles: 8, currentStock: 1.5 },
@@ -269,6 +274,20 @@ const useStore = create<AppStore>()(
       ],
       mockPurchases: [
         { _id: 'mock_1', invoiceNumber: 'INV-001', supplier: 'Local Greens Co.', date: new Date().toISOString(), totalAmount: 450, paymentStatus: 'paid', documentUrl: '/dummy', items: [{ ingredientId: { name: 'Kale', unit: 'kg' }, quantity: 5, pricePaid: 300 }] }
+      ],
+      mockDeliveryRuns: [
+        {
+          _id: 'DR-001',
+          date: new Date().toISOString(),
+          status: 'in_progress',
+          drops: [
+            { subscriberId: 'SUB-001', subscriberName: 'Sarah Jenkins', phone: '9900112233', society: 'Sun City Row House', flatNo: 'B-12', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Mild allergy to raw ginger. Please ring the bell.' },
+            { subscriberId: 'SUB-004', subscriberName: 'Sofia Miller', phone: '9123456780', society: 'Sun City Row House', flatNo: 'D-11', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Citrus Glow', status: 'delivered', deliveredAt: '7:24 AM' },
+            { subscriberId: 'SUB-002', subscriberName: 'Marcus Chen', phone: '9988776655', society: 'Madhav Villa', flatNo: 'A-04', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted', status: 'delivered', deliveredAt: '7:05 AM', notes: 'Leave at the door.' },
+            { subscriberId: 'SUB-005', subscriberName: 'Priya Patel', phone: '9876543210', society: 'Madhav Villa', flatNo: 'C-01', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'skipped', deliveredAt: null, notes: 'Insufficient Balance. Skipped.' },
+          ],
+          createdBy: 'admin'
+        }
       ],
 
       // ---- Testimonials Data ----

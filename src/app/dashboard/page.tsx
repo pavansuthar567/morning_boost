@@ -24,7 +24,6 @@ export default function Dashboard() {
     fetchProducts();
   }, [fetchMe, fetchOrders, fetchWallet, fetchSubscriptions, fetchProducts]);
 
-  const hasLowBalance = subscription?.status === 'paused_balance';
 
   const todayOrder = orders.find((o: any) => {
     const d = new Date(o.deliveryDate);
@@ -91,6 +90,10 @@ export default function Dashboard() {
     setIsProcessing(false);
   };
 
+  const totalBalance = (wallet?.balance || 0) + (wallet?.bonusBalance || 0);
+  const hasLowBalance = subscription?.status === 'paused_balance';
+  const isBalanceRunningLow = !hasLowBalance && subscription?.status === 'active' && totalBalance < 200;
+
   return (
     <>
         {hasLowBalance && (
@@ -103,6 +106,22 @@ export default function Dashboard() {
                 </p>
                 <p className="text-xs text-red-600 mt-1">
                   Please <a href="/checkout" className="underline font-bold text-red-800 hover:text-red-900">top up your wallet</a> to resume your fresh juice rituals.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {isBalanceRunningLow && (
+          <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-8 rounded-lg">
+            <div className="flex items-center">
+              <span className="material-symbols-outlined text-orange-400 mr-3">account_balance_wallet</span>
+              <div>
+                <p className="text-sm text-orange-700 font-bold">
+                  Low Balance Warning
+                </p>
+                <p className="text-xs text-orange-600 mt-1">
+                  Your wallet balance is running low (₹{totalBalance}). Please <a href="/checkout" className="underline font-bold text-orange-800 hover:text-orange-900">recharge soon</a> to avoid pausing your deliveries.
                 </p>
               </div>
             </div>

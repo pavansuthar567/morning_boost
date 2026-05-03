@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import useStore from "@/store/useStore";
 
 export default function SettingsPage() {
-  const { user, subscription, addAddress, removeAddress, updateDietaryPreferences } = useStore();
+  const { user, subscription, addAddress, removeAddress, updateDietaryPreferences, config } = useStore();
   const [isAdding, setIsAdding] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -100,7 +100,10 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Society / Building Name</label>
-                <input required className="w-full h-14 bg-slate-50 border-none rounded-xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})} placeholder="e.g. Marvel Bounty Soc." type="text" />
+                <select required className="w-full h-14 bg-slate-50 border-none rounded-xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})}>
+                  <option value="">Select Society...</option>
+                  {config.societies.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Flat / House No.</label>
@@ -112,7 +115,10 @@ export default function SettingsPage() {
               </div>
               <div className="md:col-span-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Area / Area Landmark</label>
-                <input required className="w-full h-14 bg-slate-50 border-none rounded-xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})} placeholder="Near Central Mall, Koregaon Park" type="text" />
+                <select required className="w-full h-14 bg-slate-50 border-none rounded-xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})}>
+                  <option value="">Select Area...</option>
+                  {config.areas.map((a: string) => <option key={a} value={a}>{a}</option>)}
+                </select>
               </div>
             </div>
             <div className="flex items-center gap-2">
