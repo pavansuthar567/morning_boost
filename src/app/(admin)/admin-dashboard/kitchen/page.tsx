@@ -223,16 +223,26 @@ export default function AdminKitchenPage() {
   const printLabels = () => {
     const labelsToPrint = batchDrops;
     if (labelsToPrint.length === 0) return;
+    const slogans = [
+      'Pressed fresh, just for you ☀️',
+      'Your daily dose of sunshine 🌿',
+      'Sip smart. Live fresh. 💚',
+      'Made with love this morning 🌅',
+      'Fresh from our kitchen to yours ✨',
+    ];
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) return;
     const labelsHtml = labelsToPrint.map((d: any) => {
       const hasNote = d.notes && !d.notes.toLowerCase().includes('insufficient balance');
+      const slogan = slogans[Math.floor(Math.random() * slogans.length)];
       return `
-        <div style="border:1.5px solid #000;padding:6px 10px;margin:4px;width:144px;height:96px;font-family:Arial,sans-serif;page-break-inside:avoid;border-radius:6px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;justify-content:center;">
+        <div style="border:1.5px solid #000;padding:6px 10px;margin:4px;width:144px;height:108px;font-family:Arial,sans-serif;page-break-inside:avoid;border-radius:6px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="font-size:8px;font-weight:900;letter-spacing:0.5px;margin-bottom:3px;">🧃 MORNING BOOST</div>
           <div style="font-size:11px;font-weight:900;line-height:1.2;">${d.subscriberName}</div>
           <div style="font-size:9px;color:#444;margin:2px 0 4px;">${d.flatNo} • ${d.society}</div>
           <div style="font-size:10px;font-weight:700;border-top:1px solid #000;padding-top:4px;">${d.scheduledJuice}</div>
           ${hasNote ? `<div style="font-size:8px;margin-top:3px;border-top:1px dashed #000;padding-top:3px;line-height:1.2;">&#9888; ${d.notes}</div>` : ''}
+          <div style="margin-top:auto;font-size:7px;font-style:italic;color:#555;text-align:center;padding-top:3px;">${slogan}</div>
         </div>
       `;
     }).join('');
