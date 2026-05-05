@@ -6,28 +6,31 @@ export default function AdminDashboard() {
   const { adminData, fetchAdminData, user } = useStore();
 
   useEffect(() => {
-    const fetchData = async () => {
-      await Promise.all([
-        fetchAdminData('stats'),
-        fetchAdminData('orders'),
-        fetchAdminData('subscribers'),
-        fetchAdminData('inventory')
-      ]);
-    };
-    fetchData();
+    fetchAdminData('overview');
   }, [fetchAdminData]);
 
   const stats = adminData.stats as any || {};
   const pressingList: { name: string; qty: number; price: number }[] = stats.pressingList || [];
   const deliverySnapshot = stats.deliverySnapshot || { totalDrops: 0, zones: [] };
-
-  const todayOrders = adminData.allOrders.filter(o =>
-    new Date(o.deliveryDate).toDateString() === new Date().toDateString()
-  );
+  const growth = stats.growth || { newSignups: 0, churnRisk: 0 };
+  const activityFeed: { type: string; text: string; avatar?: string; time: string }[] = stats.activityFeed || [];
 
   // Calculated values
   const pressingTotal = pressingList.reduce((sum, item) => sum + item.qty, 0);
   const pressingRevenue = pressingList.reduce((sum, item) => sum + (item.qty * item.price), 0);
+
+  // Delivery progress
+  const totalDelivered = deliverySnapshot.zones?.reduce((sum: number, z: any) => sum + (z.delivered || 0), 0) || 0;
+  const totalDrops = deliverySnapshot.totalDrops || 0;
+
+  // Time ago helper
+  const timeAgo = (iso: string) => {
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (diff < 1) return 'just now';
+    if (diff < 60) return `${diff}m ago`;
+    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+    return `${Math.floor(diff / 1440)}d ago`;
+  };
 
   return (
     <>
@@ -175,25 +178,49 @@ export default function AdminDashboard() {
 
         {/* Delivery Snapshot + Quick Actions */}
         <div className="col-span-5 flex flex-col gap-6">
-          {/* Delivery Zones */}
+          {/* Delivery Zones — Enhanced with progress */}
           <div className="bg-surface-container-lowest rounded-2xl border border-slate-100 p-6 flex-1">
             <div className="flex justify-between items-center mb-5">
               <h3 className="font-headline text-lg font-bold">🚚 Delivery Snapshot</h3>
-              <span className="text-sm font-bold text-on-surface">{deliverySnapshot.totalDrops} drops</span>
+              <span className="text-sm font-bold text-on-surface">{totalDelivered}/{totalDrops} done</span>
             </div>
+
+            {/* Overall progress bar */}
+            <div className="mb-5">
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-1000"
+                  style={{ width: totalDrops > 0 ? `${Math.round((totalDelivered / totalDrops) * 100)}%` : '0%' }}
+                ></div>
+              </div>
+            </div>
+
             <div className="space-y-3">
-              {(deliverySnapshot.zones || []).map((zone: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-surface-container">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-slate-400 text-lg">location_on</span>
-                    <span className="text-sm font-bold">{zone.name}</span>
+              {(deliverySnapshot.zones || []).map((zone: any, idx: number) => {
+                const zonePct = zone.total > 0 ? Math.round((zone.delivered / zone.total) * 100) : 0;
+                const isDone = zone.delivered === zone.total && zone.total > 0;
+                return (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-surface-container">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className={`material-symbols-outlined text-lg ${isDone ? 'text-green-500' : 'text-slate-400'}`} style={isDone ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                        {isDone ? 'check_circle' : 'location_on'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-bold">{zone.name}</span>
+                          <span className={`text-sm font-bold ${isDone ? 'text-green-600' : 'text-on-surface'}`}>{zone.delivered}/{zone.total}</span>
+                        </div>
+                        <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${isDone ? 'bg-green-500' : 'bg-primary'}`}
+                            style={{ width: `${zonePct}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-headline font-extrabold">{zone.drops}</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">drops</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -222,46 +249,90 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ───── Today's Active Orders ───── */}
-      <div className="bg-surface-container-lowest rounded-2xl border border-slate-100 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="font-headline text-lg font-bold">📦 Today&apos;s Deliveries</h3>
-            <p className="text-xs text-slate-400 mt-0.5">{todayOrders.length} orders scheduled</p>
-          </div>
-          <div className="flex gap-2">
-            <button className="bg-surface-container px-4 py-1.5 rounded-full text-xs font-bold cursor-pointer hover:bg-slate-100 transition-colors">All</button>
-            <button className="bg-white px-4 py-1.5 rounded-full text-xs font-bold shadow-sm text-primary cursor-pointer">Pending</button>
+      {/* ───── Growth Metrics + Activity Feed ───── */}
+      <div className="grid grid-cols-12 gap-6">
+
+        {/* Growth Metrics */}
+        <div className="col-span-4 bg-surface-container-lowest rounded-2xl border border-slate-100 p-6">
+          <h3 className="font-headline text-lg font-bold mb-6">📈 Growth Metrics</h3>
+          <div className="space-y-5">
+            {/* New Signups */}
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-blue-600 text-xl">person_add</span>
+              </div>
+              <div>
+                <p className="text-2xl font-headline font-extrabold text-blue-700">{growth.newSignups}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">New signups this week</p>
+              </div>
+            </div>
+
+            {/* Churn Risk */}
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-100">
+              <div className="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-rose-600 text-xl">warning</span>
+              </div>
+              <div>
+                <p className="text-2xl font-headline font-extrabold text-rose-700">{growth.churnRisk}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">Churn risk (paused &gt;7d)</p>
+              </div>
+            </div>
+
+            {/* Active vs Paused ratio */}
+            <div className="p-4 rounded-xl bg-surface-container">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-slate-500">Active vs Paused</span>
+                <span className="text-xs font-bold text-green-600">{stats.activeRhythms || 0} / {stats.pausedUsers || 0}</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex">
+                <div
+                  className="h-full bg-green-500 rounded-l-full transition-all duration-700"
+                  style={{ width: `${(stats.activeRhythms || 0) + (stats.pausedUsers || 0) > 0 ? Math.round(((stats.activeRhythms || 0) / ((stats.activeRhythms || 0) + (stats.pausedUsers || 0))) * 100) : 0}%` }}
+                ></div>
+                <div
+                  className="h-full bg-rose-400 rounded-r-full transition-all duration-700"
+                  style={{ width: `${(stats.activeRhythms || 0) + (stats.pausedUsers || 0) > 0 ? Math.round(((stats.pausedUsers || 0) / ((stats.activeRhythms || 0) + (stats.pausedUsers || 0))) * 100) : 0}%` }}
+                ></div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="space-y-3">
-          {todayOrders.length > 0 ? todayOrders.map(order => (
-            <div key={order._id} className="flex items-center justify-between p-4 bg-surface-container rounded-xl hover:shadow-sm transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-orange-100 flex items-center justify-center font-bold text-primary text-sm">
-                  {order.user?.avatar ? <img alt="Customer" className="w-full h-full object-cover" src={order.user.avatar} /> : (order.user?.name?.charAt(0) || 'U')}
+
+        {/* Activity Feed */}
+        <div className="col-span-8 bg-surface-container-lowest rounded-2xl border border-slate-100 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-headline text-lg font-bold">⚡ Live Activity Feed</h3>
+            <span className="text-[10px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+              Live
+            </span>
+          </div>
+          <div className="space-y-2 max-h-[320px] overflow-y-auto no-scrollbar">
+            {activityFeed.length > 0 ? activityFeed.map((event, idx) => (
+              <div key={idx} className="flex items-center gap-4 p-3 rounded-xl hover:bg-surface-container transition-colors">
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-orange-100 flex items-center justify-center shrink-0">
+                  {event.avatar ? (
+                    <img alt="" className="w-full h-full object-cover" src={event.avatar} />
+                  ) : (
+                    <span className="material-symbols-outlined text-slate-400 text-lg">
+                      {event.type === 'topup' ? 'account_balance_wallet' : 'local_shipping'}
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <p className="font-bold text-sm">{order.user?.name || 'Valued Member'}</p>
-                  <p className="text-[10px] text-slate-400 font-medium">{order.items[0]?.product?.name || 'Daily Ritual'}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{event.text}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`w-2 h-2 rounded-full ${event.type === 'topup' ? 'bg-green-400' : 'bg-blue-400'}`}></span>
+                  <span className="text-[10px] font-bold text-slate-400">{timeAgo(event.time)}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Zone</p>
-                  <p className="text-xs font-bold">{order.deliveryAddress || 'Assigning...'}</p>
-                </div>
-                <span className="text-xs font-bold text-right">₹{order.totalAmount}</span>
-                <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-full ${order.status === 'delivered' ? 'bg-green-50 text-green-700' : order.status === 'out_for_delivery' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {order.status === 'out_for_delivery' ? 'En Route' : order.status}
-                </span>
+            )) : (
+              <div className="p-12 text-center text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">
+                No recent activity
               </div>
-            </div>
-          )) : (
-            <div className="p-12 text-center text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">
-              No active deliveries scheduled for today
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </>
