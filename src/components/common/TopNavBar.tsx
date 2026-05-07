@@ -46,9 +46,11 @@ export default function TopNavBar() {
               <Link href="/login" className="px-6 py-2.5 rounded-full text-slate-600 font-semibold hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">
                 Login
               </Link>
-              <Link href="/subscribe" className="vitality-gradient px-8 py-2.5 rounded-full text-white font-bold active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-900/10">
-                Subscribe
-              </Link>
+              {pathname !== '/subscribe' && (
+                <Link href="/subscribe" className="vitality-gradient px-8 py-2.5 rounded-full text-white font-bold active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-900/10">
+                  Subscribe
+                </Link>
+              )}
             </>
           )}
         </div>

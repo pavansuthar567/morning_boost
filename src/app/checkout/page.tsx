@@ -32,7 +32,7 @@ export default function Checkout() {
   const [error, setError] = useState<string | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
-  const [topUpAmount, setTopUpAmount] = useState(3000);
+  const [topUpAmount, setTopUpAmount] = useState(checkoutData?.topUpAmount || 3000);
   const [customAmount, setCustomAmount] = useState('');
 
   const [newAddress, setNewAddress] = useState({
@@ -51,6 +51,12 @@ export default function Checkout() {
       setSelectedAddressId(def._id || null);
     }
   }, [router, user, selectedAddressId]);
+
+  useEffect(() => {
+    if (checkoutData?.topUpAmount) {
+      setTopUpAmount(checkoutData.topUpAmount);
+    }
+  }, [checkoutData?.topUpAmount]);
 
   // If no checkoutData, we can still allow wallet top-ups, we just won't show the subscription summary.
   const scheduleData = checkoutData?.schedule;

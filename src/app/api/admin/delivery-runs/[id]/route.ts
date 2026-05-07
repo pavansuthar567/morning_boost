@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/lib/db';
 import DeliveryRun from '@/lib/models/DeliveryRun';
-import Wallet from '@/lib/models/Wallet';
-import Product from '@/lib/models/Product';
+// import Wallet from '@/lib/models/Wallet';
+// import Product from '@/lib/models/Product';
 import { authenticate, isAuthError, requireRole, ok, error } from '@/lib/middleware';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -36,21 +36,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const actualJuice = deliveredJuice || drop.scheduledJuice;
 
       // Find the product to get its price
-      const product = await Product.findOne({ name: actualJuice });
-      const price = product?.price || 150; // fallback price
+      // const product = await Product.findOne({ name: actualJuice });
+      // const price = product?.price || 150; // fallback price
 
-      // Deduct from wallet
-      const wallet = await Wallet.findOne({ user: drop.subscriberId });
-      if (wallet) {
-        wallet.balance = Math.max(0, wallet.balance - price);
-        wallet.transactions.push({
-          type: 'deduction',
-          amount: price,
-          description: 'Daily Juice Delivery',
-          date: new Date(),
-        });
-        await wallet.save();
-      }
+      // Wallet deduction is handled centrally via orders/[id]/status API
+      // when the order status is changed to 'delivered'. No deduction here to prevent double-charging.
 
       drop.status = action === 'substituted' ? 'substituted' : 'delivered';
       drop.deliveredJuice = actualJuice;

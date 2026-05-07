@@ -13,6 +13,7 @@ export interface User {
   email?: string;
   phone?: string;
   role: 'user' | 'admin' | 'delivery';
+  avatar?: string;
   addresses?: any[];
 }
 
@@ -127,6 +128,7 @@ interface AppStore {
   subscriptions: any[];
   fetchSubscriptions: () => Promise<void>;
   createSubscription: (schedule: { dayOfWeek: number; productId: string }[], deliveryAddress: string) => Promise<void>;
+  updateSubscription: (subId: string, schedule: { dayOfWeek: number; productId: string }[]) => Promise<void>;
   swapJuice: (subId: string, dayOfWeek: number, productId: string) => Promise<void>;
   pauseDay: (subId: string, dayOfWeek: number) => Promise<void>;
   resumeDay: (subId: string, dayOfWeek: number) => Promise<void>;
@@ -170,6 +172,7 @@ interface AppStore {
     schedule?: { dayOfWeek: number; productId: string; productName: string; price: number }[];
     weeklyTotal?: number;
     deliveryAddress?: string;
+    topUpAmount?: number;
     amount: number;
     bonus: number;
     packName: string;
@@ -444,6 +447,55 @@ const useStore = create<AppStore>()(
       },
 
       fetchMe: async () => {
+        if (!get().isLiveMode) {
+          const adminProds = get().adminData.inventory;
+          const prod1 = adminProds[0]; // Green Vitality
+          const prod2 = adminProds[1]; // Citrus Glow
+
+          // Provide rich mock data for user dashboard in demo mode
+          const mockUser = {
+            _id: 'user_mock_1',
+            name: 'Alex Johnson',
+            email: 'alex.j@icloud.com',
+            phone: '9876543210',
+            role: 'user',
+            avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Alex',
+            addresses: [{
+              _id: 'addr_1',
+              society: 'Sunrise Towers',
+              flatNo: 'A-402',
+              area: 'Downtown',
+              pincode: '400001',
+              isDefault: true
+            }]
+          };
+
+          const mockWallet = {
+            balance: 1500,
+            bonusBalance: 300,
+            transactions: [
+              { _id: 'tx_1', type: 'topup', amount: 3000, description: 'Wallet top-up of ₹3000', date: new Date(Date.now() - 5 * 86400000).toISOString() },
+              { _id: 'tx_2', type: 'bonus', amount: 300, description: 'Bonus credit of ₹300', date: new Date(Date.now() - 5 * 86400000).toISOString() },
+              { _id: 'tx_3', type: 'deduction', amount: prod1.price, description: `Delivery Deduction for ${prod1.name}`, date: new Date(Date.now() - 2 * 86400000).toISOString() },
+              { _id: 'tx_4', type: 'deduction', amount: prod2.price, description: `Delivery Deduction for ${prod2.name}`, date: new Date(Date.now() - 1 * 86400000).toISOString() },
+            ]
+          };
+
+          const mockSubscription = {
+            _id: 'sub_mock_1',
+            status: 'active',
+            schedule: [0, 1, 2, 3, 4, 5, 6].map(day => ({
+              dayOfWeek: day,
+              product: day % 2 === 0 ? prod1 : prod2,
+              isPaused: day === 0 // Sunday paused
+            })),
+            dietaryPreferences: ['Vegan', 'No Added Sugar'],
+            dietaryNote: 'Slight allergy to raw ginger'
+          };
+
+          set({ user: mockUser as any, wallet: mockWallet as any, subscription: mockSubscription as any, isBackendConnected: false });
+          return;
+        }
         const { token } = get();
         if (!token) return;
         try {
@@ -468,6 +520,10 @@ const useStore = create<AppStore>()(
       wallet: { balance: 0, bonusBalance: 0, transactions: [] },
 
       fetchWallet: async () => {
+        if (!get().isLiveMode) {
+          // Handled by fetchMe in mock mode
+          return;
+        }
         const { token } = get();
         if (!token) return;
         try {
@@ -567,6 +623,10 @@ const useStore = create<AppStore>()(
       subscriptions: [],
 
       fetchSubscriptions: async () => {
+        if (!get().isLiveMode) {
+          // Handled by fetchMe in mock mode
+          return;
+        }
         const { token } = get();
         if (!token) return;
         try {
@@ -618,6 +678,42 @@ const useStore = create<AppStore>()(
           if (!data.success) throw new Error(data.error);
           set({ subscription: data.subscription, isLoading: false });
           await get().fetchSubscriptions();
+        } catch (e) {
+          set({ isLoading: false });
+          throw e;
+        }
+      },
+
+      updateSubscription: async (subId, schedule) => {
+        if (!get().isLiveMode) {
+          const sub = get().subscription;
+          if (sub && sub._id === subId) {
+            const updatedSchedule = schedule.map((s: any) => ({
+               dayOfWeek: s.dayOfWeek,
+               product: s.productId,
+               isPaused: false
+            }));
+            set({ subscription: { ...sub, schedule: updatedSchedule } });
+          }
+          return;
+        }
+
+        const { token } = get();
+        if (!token) throw new Error('Not authenticated');
+        set({ isLoading: true });
+        try {
+          // This will invoke a full schedule update on the backend
+          const res = await fetch(`${API_URL}/subscriptions/${subId}/schedule`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ schedule }),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error);
+          set({ subscription: data.subscription, isLoading: false });
         } catch (e) {
           set({ isLoading: false });
           throw e;
@@ -706,6 +802,21 @@ const useStore = create<AppStore>()(
       orders: [],
 
       fetchOrders: async () => {
+        if (!get().isLiveMode) {
+          const adminProds = get().adminData.inventory;
+          const prod1 = adminProds[0]; // Green Vitality
+          const prod2 = adminProds[1]; // Citrus Glow
+
+          const mockOrders = [
+            { _id: 'ord_1', deliveryDate: new Date(Date.now() - 2 * 86400000).toISOString(), status: 'delivered', totalAmount: prod1.price, items: [{ product: prod1 }] },
+            { _id: 'ord_2', deliveryDate: new Date(Date.now() - 1 * 86400000).toISOString(), status: 'delivered', totalAmount: prod2.price, items: [{ product: prod2 }] },
+            { _id: 'ord_3', deliveryDate: new Date().toISOString(), status: 'out_for_delivery', totalAmount: prod1.price, items: [{ product: prod1 }] },
+            { _id: 'ord_4', deliveryDate: new Date(Date.now() + 1 * 86400000).toISOString(), status: 'scheduled', totalAmount: prod2.price, items: [{ product: prod2 }] },
+            { _id: 'ord_5', deliveryDate: new Date(Date.now() + 2 * 86400000).toISOString(), status: 'scheduled', totalAmount: prod1.price, items: [{ product: prod1 }] },
+          ];
+          set({ orders: mockOrders as any, isBackendConnected: false });
+          return;
+        }
         const { token } = get();
         if (!token) return;
         try {

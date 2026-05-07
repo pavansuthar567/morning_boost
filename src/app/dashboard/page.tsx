@@ -136,14 +136,7 @@ export default function Dashboard() {
               Your sunrise ritual is beautifully scheduled.
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="bg-surface-container-highest px-6 py-3 rounded-full flex items-center gap-3 shadow-sm">
-              <span className="material-symbols-outlined text-secondary">
-                account_balance_wallet
-              </span>
-              <span className="font-headline font-bold">₹{((wallet?.balance || 0) + (wallet?.bonusBalance || 0)).toFixed(0)}</span>
-            </div>
-          </div>
+
         </header>
 
         {/* Bento Grid Layout */}
@@ -170,7 +163,7 @@ export default function Dashboard() {
                   ) : 'No ritual today'}
                 </span>
                 {todayOrder && (
-                  <div className="glass-card px-4 py-2 rounded-lg text-white backdrop-blur-md bg-white/10 text-sm font-bold border border-white/20 shadow-lg">
+                  <div className="glass-card px-4 py-2 rounded-lg text-slate-900 bg-white/90 backdrop-blur-md text-sm font-bold shadow-lg">
                     ETA: 7:00 - 8:00 AM
                   </div>
                 )}
@@ -187,8 +180,8 @@ export default function Dashboard() {
                 </p>
                 <div className="mt-8 flex gap-4">
                   {todayOrder ? (
-                    <button className="bg-white text-orange-600 px-8 py-3.5 rounded-full font-black shadow-xl shadow-black/20 hover:scale-105 hover:bg-orange-50 active:scale-95 transition-all cursor-pointer uppercase tracking-wider text-sm">
-                      Track Driver
+                    <button onClick={() => window.location.href='/dashboard/deliveries'} className="bg-white text-orange-600 px-8 py-3.5 rounded-full font-black shadow-xl shadow-black/20 hover:scale-105 hover:bg-orange-50 active:scale-95 transition-all cursor-pointer uppercase tracking-wider text-sm">
+                      Track Delivery
                     </button>
                   ) : (
                     <button onClick={() => window.location.href='/catalog'} className="bg-white text-orange-600 px-8 py-3.5 rounded-full font-black shadow-xl shadow-black/20 hover:scale-105 active:scale-95 transition-all cursor-pointer uppercase tracking-wider text-sm">
@@ -233,7 +226,7 @@ export default function Dashboard() {
           </section>
 
           {/* 7-Day Weekly Rhythm (The core of the new subscription) */}
-          <section className="col-span-12 bg-white rounded-[2rem] p-8 md:p-10 shadow-sm border border-slate-100">
+          <section id="rhythm" className="col-span-12 bg-white rounded-[2rem] p-8 md:p-10 shadow-sm border border-slate-100">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
               <div>
                 <h3 className="font-headline font-extrabold text-3xl tracking-tight mb-2">
@@ -276,7 +269,7 @@ export default function Dashboard() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {DAY_SHORT.map((dayName, idx) => {
                   const scheduleItem = subscription.schedule.find((s: ScheduleDay) => s.dayOfWeek === idx);
                   const isPaused = scheduleItem?.isPaused;
@@ -294,89 +287,65 @@ export default function Dashboard() {
                   const isSwapping = swapDay === idx;
 
                   return (
-                    <div key={idx} className={`relative flex flex-col p-4 rounded-3xl border-2 transition-all ${
+                    <div key={idx} className={`relative flex flex-col rounded-3xl overflow-hidden border-2 transition-all group ${
                       isPaused ? 'bg-slate-50 border-slate-200 grayscale-[0.5] opacity-80' : 
                       isSwapping ? 'bg-orange-50 border-orange-400 shadow-lg' :
-                      productObj ? 'bg-white border-slate-100 hover:border-orange-200 shadow-sm' : 
+                      productObj ? 'bg-white border-slate-100 hover:border-orange-200 shadow-sm hover:shadow-xl hover:shadow-orange-900/5' : 
                       'bg-slate-50 border-dashed border-slate-200'
                     }`}>
-                      {/* Day Header */}
-                      <div className="flex justify-between items-center mb-4">
-                        <span className={`text-[10px] font-black uppercase tracking-widest ${isPaused ? 'text-slate-400' : 'text-slate-900'}`}>{dayName}</span>
-                        {productObj && (
-                          <button 
-                            disabled={isProcessing}
-                            onClick={() => isPaused ? handleResumeDay(idx) : handlePauseDay(idx)}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
-                              isPaused ? 'bg-slate-200 hover:bg-slate-300 text-slate-500' : 'bg-amber-100 hover:bg-amber-200 text-amber-600'
-                            }`}
-                            title={isPaused ? "Resume this day" : "Pause Day"}
-                          >
-                            <span className="material-symbols-outlined text-[14px]">
-                              {isPaused ? 'play_arrow' : 'pause'}
-                            </span>
-                          </button>
-                        )}
-                      </div>
+                      {!productObj ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{dayName}</span>
+                          <span className="material-symbols-outlined text-4xl mb-3 opacity-20 text-slate-900">block</span>
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">No Juice</span>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Top Image Half */}
+                          <div className="w-full aspect-[4/3] relative bg-slate-50 overflow-hidden">
+                            <img src={productObj.image} alt={productObj.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                            
+                            {/* Floating Day Badge */}
+                            <div className="absolute top-3 left-3 bg-white/95 backdrop-blur shadow-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                              <span className={`text-[9px] font-black uppercase tracking-widest ${isPaused ? 'text-slate-400' : 'text-slate-900'}`}>{dayName}</span>
+                            </div>
 
-                      {/* Content */}
-                      <div className="flex-1 flex flex-col items-center text-center justify-center min-h-[120px]">
-                        {!productObj ? (
-                          <div className="text-slate-400 flex flex-col items-center">
-                            <span className="material-symbols-outlined text-3xl mb-2 opacity-50">block</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider">No Juice</span>
-                          </div>
-                        ) : isSwapping ? (
-                          <div className="w-full absolute inset-0 bg-white rounded-3xl p-3 z-10 flex flex-col shadow-2xl border-2 border-orange-500 animate-in fade-in zoom-in duration-200">
-                            <div className="flex justify-between items-center mb-2 px-1">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Swap {dayName}</span>
-                              <button onClick={() => setSwapDay(null)} className="text-slate-400 hover:text-slate-900 cursor-pointer">
-                                <span className="material-symbols-outlined text-[16px]">close</span>
+                            {/* Floating Actions (Resume) */}
+                            {isPaused && (
+                              <button 
+                                disabled={isProcessing}
+                                onClick={() => handleResumeDay(idx)}
+                                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center cursor-pointer transition-transform hover:scale-110 text-orange-600"
+                                title="Resume this day"
+                              >
+                                <span className="material-symbols-outlined text-[16px] font-black">play_arrow</span>
                               </button>
+                            )}
+                          </div>
+
+                          {/* Bottom Info Half */}
+                          <div className="p-4 flex flex-col flex-1 bg-white">
+                            <div className="flex justify-between items-start mb-4">
+                              <h4 className="font-headline font-black text-sm md:text-base text-slate-900 leading-tight pr-2">{productObj.name}</h4>
+                              <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-1 rounded-md whitespace-nowrap">₹{productObj.price}</span>
                             </div>
-                            <div className="overflow-y-auto flex-1 sapce-y-2 no-scrollbar px-1 pb-1">
-                              {products.filter(p => p._id !== productObj?._id).map(p => (
+
+                            <div className="mt-auto">
+                              {isPaused ? (
+                                <div className="w-full py-2.5 rounded-xl bg-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-500 flex justify-center items-center">
+                                  Paused
+                                </div>
+                              ) : (
                                 <button 
-                                  key={p._id}
-                                  onClick={() => handleSwap(idx, p._id)}
-                                  className="w-full flex items-center gap-2 p-2 hover:bg-orange-50 rounded-lg text-left transition-colors cursor-pointer border border-transparent hover:border-orange-100 mb-1"
+                                  onClick={() => setSwapDay(idx)}
+                                  className="w-full py-2.5 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 transition-colors flex justify-center items-center gap-1.5 cursor-pointer"
                                 >
-                                  <img src={p.image} className="w-8 h-8 rounded-md object-cover" />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-[10px] font-bold truncate text-slate-900">{p.name}</div>
-                                    <div className="text-[9px] font-bold text-orange-600">₹{p.price}</div>
-                                  </div>
+                                  <span className="material-symbols-outlined text-[16px]">swap_horiz</span> Swap
                                 </button>
-                              ))}
+                              )}
                             </div>
                           </div>
-                        ) : (
-                          <>
-                            <div className="w-16 h-16 mb-3 rounded-2xl overflow-hidden shadow-sm">
-                              <img src={productObj.image} alt={productObj.name} className="w-full h-full object-cover" />
-                            </div>
-                            <h4 className="text-[11px] font-black text-slate-900 leading-tight mb-1">{productObj.name}</h4>
-                            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-sm">₹{productObj.price}</span>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Footer Actions */}
-                      {productObj && !isPaused && !isSwapping && (
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-center">
-                          <button 
-                            onClick={() => setSwapDay(idx)}
-                            className="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer transition-colors px-2 py-1 hover:bg-orange-50 rounded-md"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">swap_horiz</span> Swap
-                          </button>
-                        </div>
-                      )}
-                      
-                      {isPaused && !isSwapping && (
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-center">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Paused</span>
-                        </div>
+                        </>
                       )}
                     </div>
                   );
@@ -475,6 +444,66 @@ export default function Dashboard() {
             </div>
           </section>
         </div>
+
+        {/* Swap Modal */}
+        {swapDay !== null && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSwapDay(null)}></div>
+            <div className="relative bg-white w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-6 sm:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                  <h3 className="font-headline font-extrabold text-2xl tracking-tight text-slate-900">
+                    Swap Juice for {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][swapDay]}
+                  </h3>
+                  <p className="text-sm text-slate-500 font-medium mt-1">Select a new juice for this day's delivery.</p>
+                </div>
+                <button onClick={() => setSwapDay(null)} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+              <div className="p-6 sm:p-8 overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {products.map(p => {
+                    const currentProduct = subscription?.schedule?.find((s: any) => s.dayOfWeek === swapDay)?.product;
+                    const currentProductId = typeof currentProduct === 'object' ? currentProduct?._id : currentProduct;
+                    const isCurrent = currentProductId === p._id;
+                    
+                    return (
+                      <button 
+                        key={p._id}
+                        disabled={isCurrent}
+                        onClick={() => {
+                          handleSwap(swapDay, p._id);
+                          setSwapDay(null);
+                        }}
+                        className={`text-left p-5 rounded-3xl border-2 transition-all group ${isCurrent ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed' : 'bg-white border-slate-100 hover:border-orange-400 hover:shadow-xl hover:shadow-orange-900/10 cursor-pointer'}`}
+                      >
+                        <div className="w-full aspect-square mb-5 rounded-2xl overflow-hidden bg-slate-50">
+                          <img src={p.image} alt={p.name} className={`w-full h-full object-cover transition-transform duration-700 ${!isCurrent && 'group-hover:scale-110'}`} />
+                        </div>
+                        <h4 className="font-headline font-bold text-lg text-slate-900 leading-tight mb-2">{p.name}</h4>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{p.category || 'Cold Pressed'}</span>
+                          <span className="text-sm font-black text-orange-600">₹{p.price}</span>
+                        </div>
+                        {isCurrent && (
+                          <div className="mt-4 text-center text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-200 py-1.5 rounded-lg w-full">
+                            Current Selection
+                          </div>
+                        )}
+                        {!isCurrent && (
+                          <div className="mt-4 text-center text-[10px] font-black text-orange-600 uppercase tracking-widest bg-orange-50 py-1.5 rounded-lg w-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            Select Juice
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
     </>
   );
 }

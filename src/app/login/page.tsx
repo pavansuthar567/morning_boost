@@ -23,7 +23,15 @@ export default function Login() {
       } else {
         await loginWithPhone(phone, otp);
       }
-      router.push('/dashboard');
+      
+      const role = useStore.getState().user?.role;
+      if (role === 'admin') {
+        router.push('/admin-dashboard');
+      } else if (role === 'delivery') {
+        router.push('/driver');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message || 'Login failed');
     }
@@ -33,7 +41,12 @@ export default function Login() {
     setPhone('9988776655');
     setPassword('admin123');
     setTimeout(() => {
-       login({ phone: '9988776655', password: 'admin123' }).then(() => router.push('/dashboard'));
+       login({ phone: '9988776655', password: 'admin123' }).then(() => {
+         const role = useStore.getState().user?.role;
+         if (role === 'admin') router.push('/admin-dashboard');
+         else if (role === 'delivery') router.push('/driver');
+         else router.push('/dashboard');
+       });
     }, 100);
   };
 
@@ -83,7 +96,7 @@ export default function Login() {
             type="button"
             onClick={() => {
               useStore.getState().bypassLogin('admin');
-              router.push('/admin');
+              router.push('/admin-dashboard');
             }}
             className="w-full bg-orange-50 text-orange-600 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-orange-100 transition-colors border border-orange-100"
           >

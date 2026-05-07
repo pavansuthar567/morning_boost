@@ -17,10 +17,19 @@ const DAY_LABELS = [
 
 export default function Subscribe() {
   const router = useRouter();
-  const { setCheckoutData, products, fetchProducts, user, isAuthenticated } = useStore();
+  const { setCheckoutData, products, fetchProducts, isAuthenticated, subscription } = useStore();
 
   // schedule: { [dayOfWeek]: productId }
-  const [schedule, setSchedule] = useState<Record<number, string>>({});
+  const [schedule, setSchedule] = useState<Record<number, string>>(() => {
+    const existing = subscription?.schedule;
+    if (!existing) return {};
+    const init: Record<number, string> = {};
+    existing.forEach((s: any) => {
+      const pid = typeof s.product === 'object' ? s.product?._id : s.product;
+      if (pid) init[s.dayOfWeek] = pid;
+    });
+    return init;
+  });
   const [activeCategory, setActiveCategory] = useState<string>('All');
 
   useEffect(() => {
@@ -57,7 +66,7 @@ export default function Subscribe() {
     });
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!allFilled) {
       alert("Please assign a juice to all 7 days!");
       return;
@@ -80,6 +89,18 @@ export default function Subscribe() {
       };
     });
 
+    if (subscription) {
+      // User already has a subscription, just update the schedule
+      try {
+        await useStore.getState().updateSubscription(subscription._id, scheduleData);
+        alert('Rhythm successfully updated!');
+        router.push('/dashboard');
+      } catch (e: any) {
+        alert(e.message || 'Failed to update rhythm');
+      }
+      return;
+    }
+
     setCheckoutData({
       schedule: scheduleData,
       weeklyTotal,
@@ -97,11 +118,13 @@ export default function Subscribe() {
       <main className="pt-32 pb-40 px-6 max-w-7xl mx-auto">
         {/* Progress Stepper */}
         <div className="mb-16">
-          <div className="flex items-center justify-between relative max-w-lg mx-auto">
+          <div className={`flex items-center ${subscription ? 'justify-center' : 'justify-between'} relative max-w-lg mx-auto`}>
             {/* Progress Line */}
-            <div className="absolute top-6 left-6 right-6 h-1 bg-surface-container-high -translate-y-1/2 z-0 rounded-full overflow-hidden">
-              <div className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-1000 w-0"></div>
-            </div>
+            {!subscription && (
+              <div className="absolute top-6 left-6 right-6 h-1 bg-surface-container-high -translate-y-1/2 z-0 rounded-full overflow-hidden">
+                <div className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-1000 w-0"></div>
+              </div>
+            )}
 
             {/* Steps */}
             <div className="relative z-10 flex flex-col items-center gap-2">
@@ -111,25 +134,31 @@ export default function Subscribe() {
               <span className="text-[10px] font-black uppercase tracking-widest text-primary">Rhythm</span>
             </div>
 
-            <div className="relative z-10 flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-surface-container-highest text-slate-400 flex items-center justify-center font-bold ring-4 ring-white">
-                2
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Checkout</span>
-            </div>
+            {!subscription && (
+              <>
+                <div className="relative z-10 flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-surface-container-highest text-slate-400 flex items-center justify-center font-bold ring-4 ring-white">
+                    2
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Checkout</span>
+                </div>
 
-            <div className="relative z-10 flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-surface-container-highest text-slate-400 flex items-center justify-center font-bold ring-4 ring-white">
-                <span className="material-symbols-outlined text-sm">home</span>
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Confirmed</span>
-            </div>
+                <div className="relative z-10 flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-surface-container-highest text-slate-400 flex items-center justify-center font-bold ring-4 ring-white">
+                    <span className="material-symbols-outlined text-sm">home</span>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Confirmed</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Header Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-headline font-extrabold tracking-tight text-on-surface mb-4">Choose Your Rhythm</h1>
+          <h1 className="text-4xl md:text-5xl font-headline font-extrabold tracking-tight text-on-surface mb-4">
+            {subscription ? 'Update Your Rhythm' : 'Choose Your Rhythm'}
+          </h1>
           <p className="text-lg text-on-surface-variant max-w-xl mx-auto">Build your perfect week. Tap the days you want each juice delivered to your door.</p>
         </div>
 
@@ -259,7 +288,7 @@ export default function Subscribe() {
               : 'bg-slate-800 text-slate-500 opacity-70 cursor-not-allowed shadow-none'
               }`}
           >
-            {allFilled ? 'Lock Schedule' : `Select ${7 - filledDays} More Days`}
+            {allFilled ? (subscription ? 'Update Schedule' : 'Lock Schedule') : `Select ${7 - filledDays} More Days`}
             {allFilled && <span className="material-symbols-outlined font-black">arrow_forward</span>}
           </button>
         </div>

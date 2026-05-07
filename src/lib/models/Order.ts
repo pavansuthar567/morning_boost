@@ -14,7 +14,7 @@ export interface IOrder extends Document {
   deliveryAddress: string;
   timeSlot: string;
   status: 'pending' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
-  paymentStatus: 'wallet_deducted' | 'failed';
+  paymentStatus: 'pending' | 'wallet_deducted' | 'failed';
   totalAmount: number;
   driver?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -45,8 +45,8 @@ const orderSchema = new Schema<IOrder>(
     },
     paymentStatus: {
       type: String,
-      enum: ['wallet_deducted', 'failed'],
-      default: 'wallet_deducted',
+      enum: ['pending', 'wallet_deducted', 'failed'],
+      default: 'pending',
     },
     totalAmount: { type: Number, required: true },
     driver: { type: Schema.Types.ObjectId, ref: 'User' },
