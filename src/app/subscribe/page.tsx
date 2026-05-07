@@ -264,9 +264,9 @@ export default function Subscribe() {
       </main>
 
       {/* Floating Action Bar */}
-      <div className="fixed bottom-0 left-0 w-full bg-on-surface text-white py-6 px-8 z-50 rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-8 w-full md:w-auto">
+      <div className="fixed bottom-0 left-0 w-full bg-on-surface text-white py-4 px-4 sm:px-8 z-50 rounded-t-[1.5rem] sm:rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+        <div className="max-w-[1440px] mx-auto flex flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 sm:gap-8 w-auto">
             <div className="text-left hidden md:block">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Your Rhythm</p>
               <div className="flex items-center gap-2 text-xl font-headline font-bold">
@@ -274,22 +274,22 @@ export default function Subscribe() {
               </div>
             </div>
             <div className="hidden md:block w-px h-10 bg-slate-700"></div>
-            <div className="text-left flex-1 md:flex-none">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Weekly Total</p>
-              <p className="text-2xl font-headline font-bold text-primary">₹{weeklyTotal.toLocaleString()}</p>
+            <div className="text-left">
+              <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5 sm:mb-1">Weekly Total</p>
+              <p className="text-xl sm:text-2xl font-headline font-bold text-primary">₹{weeklyTotal.toLocaleString()}</p>
             </div>
           </div>
 
           <button
             disabled={!allFilled}
             onClick={handleProceed}
-            className={`w-full md:w-auto px-12 py-4 rounded-full text-sm font-black transition-all shadow-xl flex items-center justify-center gap-3 cursor-pointer uppercase tracking-widest ${allFilled
+            className={`w-auto px-6 sm:px-12 py-3 sm:py-4 rounded-full text-[10px] sm:text-sm font-black transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer uppercase tracking-widest ${allFilled
               ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-orange-900/40 hover:scale-[1.02] active:scale-95'
               : 'bg-slate-800 text-slate-500 opacity-70 cursor-not-allowed shadow-none'
               }`}
           >
-            {allFilled ? (subscription ? 'Update Schedule' : 'Lock Schedule') : `Select ${7 - filledDays} More Days`}
-            {allFilled && <span className="material-symbols-outlined font-black">arrow_forward</span>}
+            {allFilled ? (subscription ? 'Update' : 'Lock Schedule') : `Pick ${7 - filledDays}`}
+            {allFilled && <span className="material-symbols-outlined font-black text-sm sm:text-base">arrow_forward</span>}
           </button>
         </div>
       </div>

@@ -108,7 +108,7 @@ export default function HistoryPage() {
 
         {/* Transaction Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[600px]">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="px-6 md:px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</th>

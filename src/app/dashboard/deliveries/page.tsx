@@ -91,7 +91,7 @@ export default function DeliveriesPage() {
           </div>
 
           {todayOrder ? (
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex flex-col-reverse md:flex-row justify-between items-start md:items-center gap-6 mt-4 md:mt-0">
               <div>
                 <h2 className="text-3xl md:text-4xl font-headline font-black mb-2">
                   {todayOrder.items?.[0]?.product?.name || 'Your Juice'}
@@ -113,7 +113,7 @@ export default function DeliveriesPage() {
                 </div>
               </div>
               {todayOrder.items?.[0]?.product?.image && (
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shadow-lg border-2 border-white/20 shrink-0">
+                <div className="w-full h-56 md:w-32 md:h-32 rounded-2xl overflow-hidden shadow-lg border-2 border-white/10 shrink-0">
                   <img src={todayOrder.items[0].product.image} alt="" className="w-full h-full object-cover" />
                 </div>
               )}

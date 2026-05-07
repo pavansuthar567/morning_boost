@@ -254,17 +254,23 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full bg-white font-headline border-t border-slate-100">
-        <div className="h-32 flex items-center">
-          <div className="max-w-[1440px] mx-auto px-8 flex flex-col md:flex-row justify-between items-center w-full gap-8">
-            <Link href="/" className="text-2xl font-black text-[#FF8C00] italic">Morning Fresh</Link>
-            <div className="flex flex-wrap justify-center gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
-              <a className="text-slate-400 hover:text-primary transition-colors" href="#">Privacy</a>
-              <a className="text-slate-400 hover:text-primary transition-colors" href="#">Terms</a>
-              <a className="text-slate-400 hover:text-primary transition-colors" href="#">Sustainability</a>
-              <a className="text-slate-400 hover:text-primary transition-colors" href="#">Wholesale</a>
+      <footer className="w-full bg-slate-950 font-headline border-t border-slate-900 text-white mt-12 md:mt-20">
+        <div className="py-16 md:py-0 md:h-32 flex items-center">
+          <div className="max-w-[1440px] mx-auto px-6 md:px-8 flex flex-col md:flex-row justify-between items-center w-full gap-8">
+            <Link href="/" className="text-3xl md:text-2xl font-black text-[#FF8C00] italic mb-1 md:mb-0 drop-shadow-md">
+              Morning Fresh
+            </Link>
+            
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-4 md:gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
+              <a className="text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Privacy</a>
+              <a className="text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Terms</a>
+              <a className="text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Sustainability</a>
+              <a className="text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Wholesale</a>
             </div>
-            <div className="text-slate-300 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 Morning Fresh. Cold-Pressed Vitality.</div>
+            
+            <div className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] text-center md:text-right">
+              © 2026 Morning Fresh.<br className="block md:hidden" /> Cold-Pressed Vitality.
+            </div>
           </div>
         </div>
       </footer>
