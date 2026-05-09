@@ -93,7 +93,7 @@ export default function ProductDetailPage() {
               {/* Action Buttons */}
               <div className="flex gap-4">
                 <button 
-                  onClick={() => router.push('/subscribe')}
+                  onClick={() => router.push(`/subscribe?prefill=${product._id}`)}
                   className="flex-1 bg-vibrant-orange hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-headline font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-[0.98] cursor-pointer"
                 >
                   Add to My Rhythm

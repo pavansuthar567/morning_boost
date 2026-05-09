@@ -9,6 +9,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
   const { register, isLoading } = useStore();
@@ -27,7 +28,7 @@ export default function Register() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface p-4">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl">
-        <Link href="/" className="text-2xl font-black text-vibrant-orange italic font-headline tracking-tight cursor-pointer block text-center mb-4">Morning Fresh</Link>
+        <Link href="/" className="text-2xl font-black text-vibrant-orange italic font-headline tracking-tight cursor-pointer block text-center mb-4">Morning Boost</Link>
         <h2 className="text-2xl font-bold font-headline text-center mb-2">Start Your Ritual</h2>
         <p className="text-center text-sm text-slate-500 mb-8">Create your account and get fresh juice every morning</p>
 
@@ -44,7 +45,12 @@ export default function Register() {
           </div>
           <div>
             <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1 block mb-2">Password</label>
-            <input type="password" className="w-full bg-surface-container-highest border-none rounded-xl px-5 py-4 focus:ring-2 focus:ring-vibrant-orange/30 outline-none" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <div className="relative">
+              <input type={showPassword ? "text" : "password"} className="w-full bg-surface-container-highest border-none rounded-xl px-5 py-4 focus:ring-2 focus:ring-vibrant-orange/30 outline-none pr-12" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
+              </button>
+            </div>
           </div>
           <button type="submit" disabled={isLoading} className="w-full bg-juicy-gradient text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-orange-900/10 active:scale-95 transition-all hover:brightness-110 disabled:opacity-50 cursor-pointer">
             {isLoading ? 'Creating account...' : 'Create Account'}

@@ -178,10 +178,10 @@ export default function SettingsPage() {
           {!isEditingProfile && (
             <button
               onClick={() => { setIsEditingProfile(true); setProfileName(user?.name || ''); setProfilePhone(user?.phone || ''); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer"
+              title="Edit Profile"
             >
-              <span className="material-symbols-outlined text-base">edit</span>
-              Edit
+              <span className="material-symbols-outlined text-lg">edit</span>
             </button>
           )}
         </div>
@@ -344,9 +344,8 @@ export default function SettingsPage() {
             <p className="text-slate-500 mt-1 text-sm">Update your password.</p>
           </div>
           {!showPasswordForm && (
-            <button onClick={() => setShowPasswordForm(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors cursor-pointer">
-              <span className="material-symbols-outlined text-base">lock</span>
-              Change Password
+            <button onClick={() => setShowPasswordForm(true)} className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer" title="Change Password">
+              <span className="material-symbols-outlined text-lg">lock</span>
             </button>
           )}
         </div>

@@ -10,6 +10,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
   const { login, loginWithPhone, isLoading } = useStore();
@@ -53,7 +54,7 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface p-4">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl">
-        <Link href="/" className="text-2xl font-black text-vibrant-orange italic font-headline tracking-tight cursor-pointer block text-center mb-4">Morning Fresh</Link>
+        <Link href="/" className="text-2xl font-black text-vibrant-orange italic font-headline tracking-tight cursor-pointer block text-center mb-4">Morning Boost</Link>
         <h2 className="text-2xl font-bold font-headline text-center mb-2">Welcome Back</h2>
         <p className="text-center text-sm text-slate-500 mb-8">Login to manage your juicy subscriptions</p>
 
@@ -74,7 +75,12 @@ export default function Login() {
           {mode === 'password' ? (
             <div>
               <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1 block mb-2">Password</label>
-              <input type="password" className="w-full bg-surface-container-highest border-none rounded-xl px-5 py-4 focus:ring-2 focus:ring-vibrant-orange/30 outline-none" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="relative">
+                <input type={showPassword ? "text" : "password"} className="w-full bg-surface-container-highest border-none rounded-xl px-5 py-4 focus:ring-2 focus:ring-vibrant-orange/30 outline-none pr-12" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div>
@@ -89,19 +95,23 @@ export default function Login() {
         </form>
 
         <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col gap-4">
-          <button onClick={devLogin} className="w-full bg-slate-50 text-slate-400 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-colors">
-            🚀 Quick Dev Login (9988776655)
-          </button>
-          <button 
-            type="button"
-            onClick={() => {
-              useStore.getState().bypassLogin('admin');
-              router.push('/admin-dashboard');
-            }}
-            className="w-full bg-orange-50 text-orange-600 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-orange-100 transition-colors border border-orange-100"
-          >
-            🚧 Dev: Bypass Login (No DB)
-          </button>
+          {process.env.NODE_ENV !== 'production' && (
+            <>
+              <button onClick={devLogin} className="w-full bg-slate-50 text-slate-400 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-colors">
+                🚀 Quick Dev Login (9988776655)
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  useStore.getState().bypassLogin('admin');
+                  router.push('/admin-dashboard');
+                }}
+                className="w-full bg-orange-50 text-orange-600 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-orange-100 transition-colors border border-orange-100"
+              >
+                🚧 Dev: Bypass Login (No DB)
+              </button>
+            </>
+          )}
           <p className="text-center text-sm text-slate-500">
             Don&apos;t have an account? <Link href="/register" className="text-vibrant-orange font-bold cursor-pointer">Register</Link>
           </p>
