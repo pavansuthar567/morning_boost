@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import useStore from "@/store/useStore";
 import TopNavBar from "@/components/common/TopNavBar";
@@ -14,6 +14,28 @@ export default function Catalog() {
   }, [fetchProducts, fetchSubscriptions]);
 
   const activeSub = subscription;
+
+  const [maxPrice, setMaxPrice] = useState(500);
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+
+  const handleGoalToggle = (goal: string) => {
+    setSelectedGoals(prev => 
+      prev.includes(goal) ? prev.filter(g => g !== goal) : [...prev, goal]
+    );
+  };
+
+  const filteredProducts = products.filter((p: any) => {
+    if (p.price > maxPrice) return false;
+    if (selectedGoals.length > 0) {
+      const match = selectedGoals.some(g => 
+        p.category?.toLowerCase().includes(g.toLowerCase()) || 
+        p.benefits?.some((b: string) => b.toLowerCase().includes(g.toLowerCase())) ||
+        p.name?.toLowerCase().includes(g.toLowerCase())
+      );
+      if (!match) return false;
+    }
+    return true;
+  });
 
   const handleChooseJuice = async (productId: string) => {
     if (!activeSub) {
@@ -45,29 +67,29 @@ export default function Catalog() {
               <h3 className="font-headline text-xs uppercase tracking-widest text-slate-400 font-bold mb-6">Health Goal</h3>
               <div className="space-y-3">
                 <label className="flex items-center group cursor-pointer">
-                  <input className="rounded-md border-outline-variant text-[#FF8C00] focus:ring-[#FF8C00]/20 mr-3 h-5 w-5 transition-all" type="checkbox" />
-                  <span className="text-on-surface-variant group-hover:text-[#FF8C00] transition-colors font-medium">Immunity</span>
+                  <input onChange={() => handleGoalToggle('Immunity')} checked={selectedGoals.includes('Immunity')} className="rounded-md border-outline-variant text-[#FF8C00] focus:ring-[#FF8C00]/20 mr-3 h-5 w-5 transition-all" type="checkbox" />
+                  <span className={`transition-colors font-medium ${selectedGoals.includes('Immunity') ? 'text-[#FF8C00] font-bold' : 'text-on-surface-variant group-hover:text-[#FF8C00]'}`}>Immunity</span>
                 </label>
                 <label className="flex items-center group cursor-pointer">
-                  <input defaultChecked className="rounded-md border-outline-variant text-[#FF8C00] focus:ring-[#FF8C00]/20 mr-3 h-5 w-5 transition-all" type="checkbox" />
-                  <span className="text-[#FF8C00] font-bold">Detox</span>
+                  <input onChange={() => handleGoalToggle('Detox')} checked={selectedGoals.includes('Detox')} className="rounded-md border-outline-variant text-[#FF8C00] focus:ring-[#FF8C00]/20 mr-3 h-5 w-5 transition-all" type="checkbox" />
+                  <span className={`transition-colors font-medium ${selectedGoals.includes('Detox') ? 'text-[#FF8C00] font-bold' : 'text-on-surface-variant group-hover:text-[#FF8C00]'}`}>Detox</span>
                 </label>
                 <label className="flex items-center group cursor-pointer">
-                  <input className="rounded-md border-outline-variant text-[#FF8C00] focus:ring-[#FF8C00]/20 mr-3 h-5 w-5 transition-all" type="checkbox" />
-                  <span className="text-on-surface-variant group-hover:text-[#FF8C00] transition-colors font-medium">Energy</span>
+                  <input onChange={() => handleGoalToggle('Energy')} checked={selectedGoals.includes('Energy')} className="rounded-md border-outline-variant text-[#FF8C00] focus:ring-[#FF8C00]/20 mr-3 h-5 w-5 transition-all" type="checkbox" />
+                  <span className={`transition-colors font-medium ${selectedGoals.includes('Energy') ? 'text-[#FF8C00] font-bold' : 'text-on-surface-variant group-hover:text-[#FF8C00]'}`}>Energy</span>
                 </label>
                 <label className="flex items-center group cursor-pointer">
-                  <input className="rounded-md border-outline-variant text-[#FF8C00] focus:ring-[#FF8C00]/20 mr-3 h-5 w-5 transition-all" type="checkbox" />
-                  <span className="text-on-surface-variant group-hover:text-[#FF8C00] transition-colors font-medium">Vitamin C</span>
+                  <input onChange={() => handleGoalToggle('Vitamin C')} checked={selectedGoals.includes('Vitamin C')} className="rounded-md border-outline-variant text-[#FF8C00] focus:ring-[#FF8C00]/20 mr-3 h-5 w-5 transition-all" type="checkbox" />
+                  <span className={`transition-colors font-medium ${selectedGoals.includes('Vitamin C') ? 'text-[#FF8C00] font-bold' : 'text-on-surface-variant group-hover:text-[#FF8C00]'}`}>Vitamin C</span>
                 </label>
               </div>
             </section>
             <section>
-              <h3 className="font-headline text-xs uppercase tracking-widest text-slate-400 font-bold mb-6">Price Range</h3>
-              <input className="w-full h-1.5 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-[#FF8C00]" max={50} min={5} type="range" defaultValue={25} />
+              <h3 className="font-headline text-xs uppercase tracking-widest text-slate-400 font-bold mb-6">Max Price: ₹{maxPrice}</h3>
+              <input onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-full h-1.5 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-[#FF8C00]" max={500} min={50} type="range" value={maxPrice} />
               <div className="flex justify-between mt-4 text-sm font-bold text-on-surface-variant">
-                <span>$5.00</span>
-                <span>$50.00</span>
+                <span>₹50</span>
+                <span>₹500</span>
               </div>
             </section>
             <div className="p-6 rounded-xl bg-secondary-container/20 border border-secondary/10">
@@ -80,7 +102,7 @@ export default function Catalog() {
           {/* Product Grid */}
           <div className="flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
-              {(products.length > 0 ? products : []).map((p: any) => (
+              {(filteredProducts.length > 0 ? filteredProducts : []).map((p: any) => (
                 <div key={p._id} className="group relative bg-surface-container-lowest rounded-xl p-6 transition-all duration-500 hover:scale-[1.02] editorial-shadow">
                   <Link href={`/catalog/${p._id}`}>
                     <div className="relative h-80 w-full overflow-hidden rounded-lg bg-surface-container mb-6 cursor-pointer">
@@ -121,17 +143,23 @@ export default function Catalog() {
         </div>
       </main>
       {/* Footer */}
-      <footer className="bg-white dark:bg-slate-950 w-full border-t-0 font-label">
-        <div className="bg-slate-100 dark:bg-slate-900 h-24 flex items-center">
-          <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center w-full gap-4">
-            <div className="text-lg font-bold text-slate-900">Morning Fresh</div>
-            <div className="flex space-x-8">
-              <a className="text-xs uppercase tracking-widest text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Privacy Policy</a>
-              <a className="text-xs uppercase tracking-widest text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Terms of Service</a>
-              <a className="text-xs uppercase tracking-widest text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Sustainability</a>
-              <a className="text-xs uppercase tracking-widest text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Wholesale</a>
+      <footer className="w-full bg-slate-950 font-headline border-t border-slate-900 text-white mt-12 md:mt-20">
+        <div className="py-16 md:py-0 md:h-32 flex items-center">
+          <div className="max-w-[1440px] mx-auto px-6 md:px-8 flex flex-col md:flex-row justify-between items-center w-full gap-8">
+            <Link href="/" className="text-3xl md:text-2xl font-black text-[#FF8C00] italic mb-1 md:mb-0 drop-shadow-md">
+              Morning Boost
+            </Link>
+            
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-4 md:gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
+              <a className="text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Privacy</a>
+              <a className="text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Terms</a>
+              <a className="text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Sustainability</a>
+              <a className="text-slate-400 hover:text-[#FF8C00] transition-colors" href="#">Wholesale</a>
             </div>
-            <div className="text-xs uppercase tracking-widest text-slate-400">© 2026 Morning Fresh. Cold-Pressed Vitality.</div>
+            
+            <div className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] text-center md:text-right">
+              © 2026 Morning Boost.<br className="block md:hidden" /> Cold-Pressed Vitality.
+            </div>
           </div>
         </div>
       </footer>

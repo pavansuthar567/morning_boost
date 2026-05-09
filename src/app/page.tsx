@@ -8,7 +8,7 @@ import TopNavBar from "@/components/common/TopNavBar";
 
 export default function Home() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { testimonials } = useStore();
+  const { testimonials, user } = useStore();
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -36,7 +36,11 @@ export default function Home() {
                 Experience the vitality of premium, cold-pressed nutrients delivered to your doorstep before sunrise. Nature&apos;s fuel, bottled with precision.
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
-                <Link href="/subscribe" className="vitality-gradient px-12 py-5 rounded-full text-white font-black text-lg shadow-2xl shadow-primary/20 active:scale-95 transition-all inline-block text-center uppercase tracking-wider">Subscribe Now</Link>
+                {user ? (
+                  <Link href="/dashboard" className="vitality-gradient px-12 py-5 rounded-full text-white font-black text-lg shadow-2xl shadow-primary/20 active:scale-95 transition-all inline-block text-center uppercase tracking-wider">Dashboard</Link>
+                ) : (
+                  <Link href="/subscribe" className="vitality-gradient px-12 py-5 rounded-full text-white font-black text-lg shadow-2xl shadow-primary/20 active:scale-95 transition-all inline-block text-center uppercase tracking-wider">Subscribe Now</Link>
+                )}
                 <Link href="/catalog" className="bg-white border-2 border-slate-100 px-12 py-5 rounded-full text-on-surface font-black text-lg active:scale-95 transition-all inline-block text-center uppercase tracking-wider hover:bg-slate-50">View Menu</Link>
               </div>
             </div>
@@ -95,14 +99,14 @@ export default function Home() {
         <section className="py-32 bg-surface-container-low" id="how-it-works">
           <div className="max-w-7xl mx-auto px-8">
             <div className="flex flex-col lg:flex-row gap-20 items-center">
-              <div className="lg:w-1/2 grid grid-cols-2 gap-6">
-                <div className="space-y-6 pt-16">
-                  <img alt="Selecting Plan" className="w-full h-96 object-cover rounded-[2rem] shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm345U5JozOODSxbCFBfhxwliUku7CHUB_pxh_hlRHcpE9Fc6y8SsyiOjRDp-O_Rdjz4bkgL5hMNspSf7ipFmiJktIOOCHpkJ2j9kfs-sZjGqoIhhVb5MAWvjUNkTAL4_n2MKWLkvPph5cGSmvBvM6MXi6nHZKq0ZzFPH0IK_mfEJXfZDC2ztdAPqi1TSJuzlNVoZQKcIrOehQj-06JqKtxGmm1bGQpH9_3Zqd5d4IvqXElExlbMjnl8RZentJBkH-fa9nFcubUWM" />
-                  <img alt="Fresh Juice Delivery" className="w-full h-80 object-cover rounded-[2rem] shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDViaROZ6U4faECZgAO5Om-rhej2gauXgQ71i3c5ub7tl91ICwsOQsQn-0mpS80QkYDzFCX_AjT-7Aqa4rh1zoR-YjLwvKc9w8rPlTz2eiSvOIL24XYwdqc-mdyYvC-ETBpi5W6A7gi4og2V6RQ3ecQyXbAxdIupU3gxBvl6uit0WsLR16iaqSAW2l1whgt2Pbj4EluQ3uXSToFio3_G5rMT_RwI2_mdZbuX_-64aoTV6AwsWELomWOOEo0HfKEnJzL8RayPBdnGvw" />
+              <div className="lg:w-1/2 grid grid-cols-2 gap-4 md:gap-6">
+                <div className="space-y-4 md:space-y-6 pt-8 md:pt-16">
+                  <img alt="Selecting Plan" className="w-full h-40 md:h-96 object-cover rounded-[1.5rem] md:rounded-[2rem] shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm345U5JozOODSxbCFBfhxwliUku7CHUB_pxh_hlRHcpE9Fc6y8SsyiOjRDp-O_Rdjz4bkgL5hMNspSf7ipFmiJktIOOCHpkJ2j9kfs-sZjGqoIhhVb5MAWvjUNkTAL4_n2MKWLkvPph5cGSmvBvM6MXi6nHZKq0ZzFPH0IK_mfEJXfZDC2ztdAPqi1TSJuzlNVoZQKcIrOehQj-06JqKtxGmm1bGQpH9_3Zqd5d4IvqXElExlbMjnl8RZentJBkH-fa9nFcubUWM" />
+                  <img alt="Fresh Juice Delivery" className="w-full h-32 md:h-80 object-cover rounded-[1.5rem] md:rounded-[2rem] shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDViaROZ6U4faECZgAO5Om-rhej2gauXgQ71i3c5ub7tl91ICwsOQsQn-0mpS80QkYDzFCX_AjT-7Aqa4rh1zoR-YjLwvKc9w8rPlTz2eiSvOIL24XYwdqc-mdyYvC-ETBpi5W6A7gi4og2V6RQ3ecQyXbAxdIupU3gxBvl6uit0WsLR16iaqSAW2l1whgt2Pbj4EluQ3uXSToFio3_G5rMT_RwI2_mdZbuX_-64aoTV6AwsWELomWOOEo0HfKEnJzL8RayPBdnGvw" />
                 </div>
-                <div className="space-y-6">
-                  <img alt="Enjoying Juice" className="w-full h-80 object-cover rounded-[2rem] shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5XK1q9kbxnLIUXw_NRj6jpOT1pcgjJshYRc8-IDxhWF7EbT0QSlbHCVLdMc2viHV5al2TmVDpsIoK0CIjjqN9PwbNqS14eB3b_DOSaVWepWaRx7i3j69Ef9IyTng2UAC9VRW02ED7x6cbmo07HYR--Yc3wiqPCPKoSV9Igsft1WTy5HO22MmZMfGC-TooGMX0lWAxS0C2bxpSCZtsHBe4sfrLJZuDKKnTX8gWHJ1orAc-tQtlbrsgqIJP9mGNR3yzcq04j2YZkmo" />
-                  <img alt="Juice Pack" className="w-full h-96 object-cover rounded-[2rem] shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXhfP2VoN0s4CEhr7JVdiQ7qmQflNsUNBi9rs_hjHJJa_nNhWu-4_N_HR3iLo6YTsb3yR03ksf0FATrvkNMd8aAs3E2HW3IaNT5d1lY3PjQ5YBMdJJKN1K5cNZq0qyUAxZwBmCWxUNjkStMM2kk8PU7YLmkQkGcVhQtD4b_zyGVRHd8BUlrUU2p1xO-o2-Ndwwd86fC3kBvPeeATrRuk3OzPoJHRSTfa20CdPeU4JZCKBusZMkRfvXtSZgEAtPg88uJtXsneJvvTQ" />
+                <div className="space-y-4 md:space-y-6">
+                  <img alt="Enjoying Juice" className="w-full h-32 md:h-80 object-cover rounded-[1.5rem] md:rounded-[2rem] shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5XK1q9kbxnLIUXw_NRj6jpOT1pcgjJshYRc8-IDxhWF7EbT0QSlbHCVLdMc2viHV5al2TmVDpsIoK0CIjjqN9PwbNqS14eB3b_DOSaVWepWaRx7i3j69Ef9IyTng2UAC9VRW02ED7x6cbmo07HYR--Yc3wiqPCPKoSV9Igsft1WTy5HO22MmZMfGC-TooGMX0lWAxS0C2bxpSCZtsHBe4sfrLJZuDKKnTX8gWHJ1orAc-tQtlbrsgqIJP9mGNR3yzcq04j2YZkmo" />
+                  <img alt="Juice Pack" className="w-full h-40 md:h-96 object-cover rounded-[1.5rem] md:rounded-[2rem] shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXhfP2VoN0s4CEhr7JVdiQ7qmQflNsUNBi9rs_hjHJJa_nNhWu-4_N_HR3iLo6YTsb3yR03ksf0FATrvkNMd8aAs3E2HW3IaNT5d1lY3PjQ5YBMdJJKN1K5cNZq0qyUAxZwBmCWxUNjkStMM2kk8PU7YLmkQkGcVhQtD4b_zyGVRHd8BUlrUU2p1xO-o2-Ndwwd86fC3kBvPeeATrRuk3OzPoJHRSTfa20CdPeU4JZCKBusZMkRfvXtSZgEAtPg88uJtXsneJvvTQ" />
                 </div>
               </div>
               <div className="lg:w-1/2 space-y-12">
@@ -221,15 +225,16 @@ export default function Home() {
               {testimonials.map((t, i) => (
                 <div
                   key={i}
-                  className="min-w-full snap-center flex-shrink-0 bg-white p-12 rounded-[2.5rem] shadow-xl shadow-orange-900/5 flex flex-col justify-between border border-slate-50 relative"
+                  className="w-full max-w-full md:min-w-full snap-center flex-shrink-0 bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-orange-900/5 flex flex-col justify-between border border-slate-50 relative"
+                  style={{ flex: '0 0 100%' }}
                 >
                   <div className="max-w-3xl mx-auto w-full">
-                    <div className="flex text-[#FFA500] mb-8 gap-1 justify-center">
+                    <div className="flex text-[#FFA500] mb-6 md:mb-8 gap-1 justify-center">
                       {[1, 2, 3, 4, 5].map(star => (
-                        <span key={star} className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                        <span key={star} className="material-symbols-outlined text-base md:text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                       ))}
                     </div>
-                    <p className="text-2xl md:text-4xl font-headline italic font-bold text-on-surface leading-tight mb-10 text-center">
+                    <p className="text-xl md:text-4xl font-headline italic font-bold text-on-surface leading-tight mb-8 md:mb-10 text-center px-2">
                       &quot;{t.content}&quot;
                     </p>
                     <div className="flex items-center gap-5 justify-center">
@@ -258,7 +263,7 @@ export default function Home() {
         <div className="py-16 md:py-0 md:h-32 flex items-center">
           <div className="max-w-[1440px] mx-auto px-6 md:px-8 flex flex-col md:flex-row justify-between items-center w-full gap-8">
             <Link href="/" className="text-3xl md:text-2xl font-black text-[#FF8C00] italic mb-1 md:mb-0 drop-shadow-md">
-              Morning Fresh
+              Morning Boost
             </Link>
             
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-4 md:gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
@@ -269,7 +274,7 @@ export default function Home() {
             </div>
             
             <div className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] text-center md:text-right">
-              © 2026 Morning Fresh.<br className="block md:hidden" /> Cold-Pressed Vitality.
+              © 2026 Morning Boost.<br className="block md:hidden" /> Cold-Pressed Vitality.
             </div>
           </div>
         </div>

@@ -14,7 +14,7 @@ export default function TopNavBar() {
     <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl shadow-sm h-20 border-b border-slate-100 flex items-center font-headline antialiased tracking-tight">
       <div className="flex justify-between items-center px-8 w-full max-w-[1440px] mx-auto relative">
         <Link href="/" className="text-2xl font-black text-primary italic cursor-pointer">
-          Morning Fresh
+          Morning Boost
         </Link>
         <div className="hidden md:flex items-center space-x-8">
           <Link
