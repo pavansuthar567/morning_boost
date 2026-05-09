@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import useStore from "@/store/useStore";
 import TopNavBar from "@/components/common/TopNavBar";
 
@@ -15,7 +15,7 @@ const DAY_LABELS = [
   { label: 'Sat', short: 'S', index: 6 },
 ];
 
-export default function Subscribe() {
+function SubscribeContent() {
   const router = useRouter();
   const { setCheckoutData, products, fetchProducts, isAuthenticated, subscription } = useStore();
 
@@ -32,9 +32,27 @@ export default function Subscribe() {
   });
   const [activeCategory, setActiveCategory] = useState<string>('All');
 
+  const searchParams = useSearchParams();
+  const prefillJuiceId = searchParams?.get('prefill');
+
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  useEffect(() => {
+    if (products.length > 0 && prefillJuiceId && !subscription) {
+      setSchedule((prev) => {
+        if (Object.keys(prev).length === 0) {
+          // Toast could go here, but a simple alert works for MVP prefill
+          setTimeout(() => alert('Magically added your selection to Sunday! Build out the rest of your week.'), 500);
+          return { 0: prefillJuiceId };
+        }
+        return prev;
+      });
+      // Remove query param to prevent re-triggering
+      router.replace('/subscribe', { scroll: false });
+    }
+  }, [products.length, prefillJuiceId, subscription, router]);
 
   const displayProducts = products || [];
   const categories = ['All', ...Array.from(new Set(displayProducts.map(p => p.category)))];
@@ -294,5 +312,13 @@ export default function Subscribe() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Subscribe() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-surface flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"></div></div>}>
+      <SubscribeContent />
+    </Suspense>
   );
 }
