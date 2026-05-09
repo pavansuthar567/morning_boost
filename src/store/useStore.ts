@@ -13,6 +13,7 @@ export interface User {
   email?: string;
   phone?: string;
   role: 'user' | 'admin' | 'delivery';
+  avatar?: string;
   addresses?: any[];
 }
 
@@ -127,6 +128,7 @@ interface AppStore {
   subscriptions: any[];
   fetchSubscriptions: () => Promise<void>;
   createSubscription: (schedule: { dayOfWeek: number; productId: string }[], deliveryAddress: string) => Promise<void>;
+  updateSubscription: (subId: string, schedule: { dayOfWeek: number; productId: string }[]) => Promise<void>;
   swapJuice: (subId: string, dayOfWeek: number, productId: string) => Promise<void>;
   pauseDay: (subId: string, dayOfWeek: number) => Promise<void>;
   resumeDay: (subId: string, dayOfWeek: number) => Promise<void>;
@@ -149,7 +151,7 @@ interface AppStore {
     suppliers: Supplier[];
     stats: any;
   };
-  fetchAdminData: (type: 'subscribers' | 'inventory' | 'orders' | 'stats' | 'procurement' | 'recipes') => Promise<void>;
+  fetchAdminData: (type: 'subscribers' | 'inventory' | 'orders' | 'stats' | 'procurement' | 'recipes' | 'overview') => Promise<void>;
 
   // Driver
   driverOrders: Order[];
@@ -170,6 +172,7 @@ interface AppStore {
     schedule?: { dayOfWeek: number; productId: string; productName: string; price: number }[];
     weeklyTotal?: number;
     deliveryAddress?: string;
+    topUpAmount?: number;
     amount: number;
     bonus: number;
     packName: string;
@@ -202,6 +205,8 @@ interface AppStore {
   config: {
     juiceOptions: string[];
     dietOptions: string[];
+    areas: string[];
+    societies: string[];
   };
 
   // Demo Data (Mock)
@@ -210,6 +215,7 @@ interface AppStore {
   mockProcurement: any[];
   mockInventory: any[];
   mockPurchases: any[];
+  mockDeliveryRuns: any[];
 }
 
 const useStore = create<AppStore>()(
@@ -224,28 +230,30 @@ const useStore = create<AppStore>()(
       // ---- Config & Constants ----
       config: {
         juiceOptions: ['Green Vitality', 'Citrus Glow', 'Beet Rooted'],
-        dietOptions: ['Vegan', 'No Ginger', 'No Sugar', 'Keto', 'Gluten-Free', 'No Dairy']
+        dietOptions: ['Vegan', 'No Ginger', 'No Sugar', 'Keto', 'Gluten-Free', 'No Dairy'],
+        areas: ['Dindoli'],
+        societies: ['Sun City Row House', 'Madhav Villa', 'Millenium Park']
       },
 
       // ---- Demo Data ----
       mockSubscribers: [
         {
-          id: 'SUB-001', name: 'Sarah Jenkins', phone: '9900112233', email: 'sarah@gmail.com', balance: 1250, status: 'active', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Citrus Glow' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Citrus Glow' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Citrus Glow' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 15, 2026', ltv: 12000, address: 'Downtown B-12, Green City', dietaryPreferences: ['No Ginger'], dietaryNote: 'Mild allergy to raw ginger', transactions: [
+          id: 'SUB-001', name: 'Sarah Jenkins', phone: '9900112233', email: 'sarah@gmail.com', balance: 1250, status: 'active', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Citrus Glow' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Citrus Glow' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Citrus Glow' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 15, 2026', ltv: 12000, address: 'Sun City Row House, B-12, Dindoli', dietaryPreferences: ['No Ginger'], dietaryNote: 'Mild allergy to raw ginger', transactions: [
             { type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Green Vitality' },
             { type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' },
             { type: 'topup', amount: 2000, description: 'Added via UPI', date: new Date(Date.now() - 86400000 * 3).toISOString(), eventType: 'wallet' },
             { type: 'status_paused', description: 'Subscription status changed from active to paused', date: new Date(Date.now() - 86400000 * 4).toISOString(), eventType: 'activity' }
           ], initials: 'SJ', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange'
         },
-        { id: 'SUB-002', name: 'Marcus Chen', phone: '9988776655', email: 'marcus@work.co', balance: 450, status: 'active', schedule: [{ day: 'Mon', juice: 'Beet Rooted' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Beet Rooted' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Beet Rooted' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 22, 2026', ltv: 3500, address: 'West Side A-04, Green City', dietaryPreferences: [], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted' }], initials: 'MC', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
-        { id: 'SUB-003', name: 'Elena Rodriguez', phone: '9876501234', email: 'elena@design.io', balance: 0, status: 'paused', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Feb 10, 2026', ltv: 8500, address: 'North Hills C-09, Green City', dietaryPreferences: ['Vegan'], dietaryNote: 'Strictly plant-based', transactions: [{ type: 'bonus', amount: 50, description: 'Empty Bottle Return', date: new Date(Date.now() - 86400000 * 5).toISOString(), eventType: 'wallet' }, { type: 'profile_updated', description: 'Admin updated subscriber profile and dietary preferences', date: new Date(Date.now() - 86400000 * 6).toISOString(), eventType: 'activity' }], initials: 'ER', avatarBg: 'bg-blue-100', avatarColor: 'text-blue-600' },
-        { id: 'SUB-004', name: 'Sofia Miller', phone: '9123456780', email: 'sofia@design.co', balance: 3400, status: 'active', schedule: [{ day: 'Mon', juice: 'Citrus Glow' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Citrus Glow' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Citrus Glow' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Jan 5, 2026', ltv: 18000, address: 'South Park D-11, Green City', dietaryPreferences: [], dietaryNote: '', transactions: [], initials: 'SM', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange' },
-        { id: 'SUB-005', name: 'James Lin', phone: '9871234560', email: 'jlin@software.co', balance: 85, status: 'paused_balance', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Apr 1, 2026', ltv: 1200, address: 'East End E-22, Green City', dietaryPreferences: ['No Sugar'], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' }], initials: 'JL', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
+        { id: 'SUB-002', name: 'Marcus Chen', phone: '9988776655', email: 'marcus@work.co', balance: 450, status: 'active', schedule: [{ day: 'Mon', juice: 'Beet Rooted' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Beet Rooted' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Beet Rooted' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Beet Rooted' }], joinedAt: 'Mar 22, 2026', ltv: 3500, address: 'Madhav Villa, A-04, Dindoli', dietaryPreferences: [], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 1).toISOString(), eventType: 'wallet', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted' }], initials: 'MC', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
+        { id: 'SUB-003', name: 'Elena Rodriguez', phone: '9876501234', email: 'elena@design.io', balance: 0, status: 'paused', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Feb 10, 2026', ltv: 8500, address: 'Millenium Park, C-09, Dindoli', dietaryPreferences: ['Vegan'], dietaryNote: 'Strictly plant-based', transactions: [{ type: 'bonus', amount: 50, description: 'Empty Bottle Return', date: new Date(Date.now() - 86400000 * 5).toISOString(), eventType: 'wallet' }, { type: 'profile_updated', description: 'Admin updated subscriber profile and dietary preferences', date: new Date(Date.now() - 86400000 * 6).toISOString(), eventType: 'activity' }], initials: 'ER', avatarBg: 'bg-blue-100', avatarColor: 'text-blue-600' },
+        { id: 'SUB-004', name: 'Sofia Miller', phone: '9123456780', email: 'sofia@design.co', balance: 3400, status: 'active', schedule: [{ day: 'Mon', juice: 'Citrus Glow' }, { day: 'Tue', juice: 'Beet Rooted' }, { day: 'Wed', juice: 'Citrus Glow' }, { day: 'Thu', juice: 'Beet Rooted' }, { day: 'Fri', juice: 'Citrus Glow' }, { day: 'Sat', juice: 'Beet Rooted' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Jan 5, 2026', ltv: 18000, address: 'Sun City Row House, D-11, Dindoli', dietaryPreferences: [], dietaryNote: '', transactions: [], initials: 'SM', avatarBg: 'bg-orange-100', avatarColor: 'text-vibrant-orange' },
+        { id: 'SUB-005', name: 'James Lin', phone: '9871234560', email: 'jlin@software.co', balance: 85, status: 'paused_balance', schedule: [{ day: 'Mon', juice: 'Green Vitality' }, { day: 'Tue', juice: 'Green Vitality' }, { day: 'Wed', juice: 'Green Vitality' }, { day: 'Thu', juice: 'Green Vitality' }, { day: 'Fri', juice: 'Green Vitality' }, { day: 'Sat', juice: 'Green Vitality' }, { day: 'Sun', juice: 'Green Vitality' }], joinedAt: 'Apr 1, 2026', ltv: 1200, address: 'Millenium Park, E-22, Dindoli', dietaryPreferences: ['No Sugar'], dietaryNote: '', transactions: [{ type: 'deduction', amount: 150, description: 'Daily Juice Delivery', date: new Date(Date.now() - 86400000 * 2).toISOString(), eventType: 'wallet', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality' }], initials: 'JL', avatarBg: 'bg-green-100', avatarColor: 'text-green-600' },
       ],
       mockRuns: [
-        { id: 'RUN-001', driver: 'Rajesh Kumar', phone: '9876543210', zone: 'Downtown', drops: [{ customer: 'Sarah Jenkins', address: 'Downtown B-12', juice: 'Green Vitality', status: 'delivered', time: '7:12 AM' }, { customer: 'Priya Sharma', address: 'Downtown A-05', juice: 'Citrus Glow', status: 'delivered', time: '7:24 AM' }, { customer: 'Amit Patel', address: 'Downtown C-08', juice: 'Green Vitality', status: 'in_transit', time: '—' }], status: 'in_progress', startedAt: '6:45 AM' },
-        { id: 'RUN-002', driver: 'Sunil Yadav', phone: '9988776655', zone: 'West Side', drops: [{ customer: 'Marcus Chen', address: 'West Side A-04', juice: 'Beet Rooted', status: 'delivered', time: '7:05 AM' }, { customer: 'Elena Rodriguez', address: 'West Side D-11', juice: 'Citrus Glow', status: 'delivered', time: '7:18 AM' }], status: 'completed', startedAt: '6:50 AM' },
-        { id: 'RUN-003', driver: 'Vikram Singh', phone: '9871234560', zone: 'North Hills', drops: [{ customer: 'Sofia Miller', address: 'North Hills C-09', juice: 'Beet Rooted', status: 'pending', time: '—' }, { customer: 'James Lin', address: 'North Hills E-03', juice: 'Green Vitality', status: 'pending', time: '—' }], status: 'pending', startedAt: '—' }
+        { id: 'RUN-001', driver: 'Rajesh Kumar', phone: '9876543210', zone: 'Sun City Row House', drops: [{ customer: 'Sarah Jenkins', address: 'B-12', juice: 'Green Vitality', status: 'delivered', time: '7:12 AM' }, { customer: 'Sofia Miller', address: 'D-11', juice: 'Citrus Glow', status: 'delivered', time: '7:24 AM' }], status: 'completed', startedAt: '6:45 AM' },
+        { id: 'RUN-002', driver: 'Sunil Yadav', phone: '9988776655', zone: 'Madhav Villa', drops: [{ customer: 'Marcus Chen', address: 'A-04', juice: 'Beet Rooted', status: 'delivered', time: '7:05 AM' }], status: 'completed', startedAt: '6:50 AM' },
+        { id: 'RUN-003', driver: 'Vikram Singh', phone: '9871234560', zone: 'Millenium Park', drops: [{ customer: 'Elena Rodriguez', address: 'C-09', juice: 'Green Vitality', status: 'pending', time: '—' }], status: 'pending', startedAt: '—' }
       ],
       mockProcurement: [
         { ingredient: 'Kale', unit: 'kg', qtyNeeded: 2.4, pricePerUnit: 60, forProduct: 'Green Vitality', bottles: 8, currentStock: 1.5 },
@@ -269,6 +277,39 @@ const useStore = create<AppStore>()(
       ],
       mockPurchases: [
         { _id: 'mock_1', invoiceNumber: 'INV-001', supplier: 'Local Greens Co.', date: new Date().toISOString(), totalAmount: 450, paymentStatus: 'paid', documentUrl: '/dummy', items: [{ ingredientId: { name: 'Kale', unit: 'kg' }, quantity: 5, pricePaid: 300 }] }
+      ],
+      mockDeliveryRuns: [
+        {
+          _id: 'DR-001',
+          date: new Date().toISOString(),
+          status: 'in_progress',
+          drops: [
+            { subscriberId: 'SUB-001', subscriberName: 'Sarah Jenkins', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sarah+Jenkins', phone: '9900112233', society: 'Sun City Row House', flatNo: 'B-12', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Mild allergy to raw ginger. Use less ginger.' },
+            { subscriberId: 'SUB-006', subscriberName: 'Aarav Sharma', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Aarav+Sharma', phone: '9900112244', society: 'Sun City Row House', flatNo: 'A-03', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-007', subscriberName: 'Neha Gupta', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Neha+Gupta', phone: '9900112255', society: 'Madhav Villa', flatNo: 'B-08', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'No apple. Substitute with cucumber.' },
+            { subscriberId: 'SUB-008', subscriberName: 'Rohit Verma', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Rohit+Verma', phone: '9900112266', society: 'Madhav Villa', flatNo: 'C-05', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-009', subscriberName: 'Ananya Iyer', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ananya+Iyer', phone: '9900112277', society: 'Sun City Row House', flatNo: 'D-02', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:15 AM' },
+            { subscriberId: 'SUB-010', subscriberName: 'Kavya Nair', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Kavya+Nair', phone: '9900112288', society: 'Sun City Row House', flatNo: 'A-09', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:18 AM' },
+            { subscriberId: 'SUB-011', subscriberName: 'Vikram Joshi', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Vikram+Joshi', phone: '9900112299', society: 'Madhav Villa', flatNo: 'B-11', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-012', subscriberName: 'Meera Reddy', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Meera+Reddy', phone: '9900112300', society: 'Sun City Row House', flatNo: 'C-07', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Extra lemon please.' },
+            { subscriberId: 'SUB-004', subscriberName: 'Sofia Miller', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sofia+Miller', phone: '9123456780', society: 'Sun City Row House', flatNo: 'D-11', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Citrus Glow', status: 'delivered', deliveredAt: '7:24 AM' },
+            { subscriberId: 'SUB-013', subscriberName: 'Arjun Mehta', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Arjun+Mehta', phone: '9900112311', society: 'Madhav Villa', flatNo: 'A-06', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-014', subscriberName: 'Divya Kapoor', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Divya+Kapoor', phone: '9900112322', society: 'Sun City Row House', flatNo: 'B-15', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Skip cayenne pepper. Stomach sensitive.' },
+            { subscriberId: 'SUB-015', subscriberName: 'Ravi Patel', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ravi+Patel', phone: '9900112333', society: 'Madhav Villa', flatNo: 'D-03', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-016', subscriberName: 'Ishita Das', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ishita+Das', phone: '9900112344', society: 'Sun City Row House', flatNo: 'C-10', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-017', subscriberName: 'Siddharth Rao', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Siddharth+Rao', phone: '9900112355', society: 'Madhav Villa', flatNo: 'A-14', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-002', subscriberName: 'Marcus Chen', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Marcus+Chen', phone: '9988776655', society: 'Madhav Villa', flatNo: 'A-04', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted', status: 'delivered', deliveredAt: '7:05 AM', notes: 'Leave at the door.' },
+            { subscriberId: 'SUB-018', subscriberName: 'Tanvi Singh', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Tanvi+Singh', phone: '9900112366', society: 'Sun City Row House', flatNo: 'B-06', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-019', subscriberName: 'Karan Malhotra', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Karan+Malhotra', phone: '9900112377', society: 'Madhav Villa', flatNo: 'D-09', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Allergic to mint. Skip mint completely.' },
+            { subscriberId: 'SUB-020', subscriberName: 'Pooja Saxena', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Pooja+Saxena', phone: '9900112388', society: 'Sun City Row House', flatNo: 'A-12', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-021', subscriberName: 'Aditya Kumar', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Aditya+Kumar', phone: '9900112399', society: 'Sun City Row House', flatNo: 'C-14', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-022', subscriberName: 'Sneha Tiwari', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sneha+Tiwari', phone: '9900112400', society: 'Madhav Villa', flatNo: 'B-03', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-023', subscriberName: 'Manish Agarwal', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Manish+Agarwal', phone: '9900112411', society: 'Sun City Row House', flatNo: 'D-07', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null },
+            { subscriberId: 'SUB-024', subscriberName: 'Ritika Bhatt', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ritika+Bhatt', phone: '9900112422', society: 'Madhav Villa', flatNo: 'A-10', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Double turmeric. She takes it for joint pain.' },
+            { subscriberId: 'SUB-005', subscriberName: 'Priya Patel', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Priya+Patel', phone: '9876543210', society: 'Madhav Villa', flatNo: 'C-01', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'skipped', deliveredAt: null, notes: 'Insufficient Balance. Skipped.' },
+          ],
+          createdBy: 'admin'
+        }
       ],
 
       // ---- Testimonials Data ----
@@ -406,6 +447,55 @@ const useStore = create<AppStore>()(
       },
 
       fetchMe: async () => {
+        if (!get().isLiveMode) {
+          const adminProds = get().adminData.inventory;
+          const prod1 = adminProds[0]; // Green Vitality
+          const prod2 = adminProds[1]; // Citrus Glow
+
+          // Provide rich mock data for user dashboard in demo mode
+          const mockUser = {
+            _id: 'user_mock_1',
+            name: 'Alex Johnson',
+            email: 'alex.j@icloud.com',
+            phone: '9876543210',
+            role: 'user',
+            avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Alex',
+            addresses: [{
+              _id: 'addr_1',
+              society: 'Sunrise Towers',
+              flatNo: 'A-402',
+              area: 'Downtown',
+              pincode: '400001',
+              isDefault: true
+            }]
+          };
+
+          const mockWallet = {
+            balance: 1500,
+            bonusBalance: 300,
+            transactions: [
+              { _id: 'tx_1', type: 'topup', amount: 3000, description: 'Wallet top-up of ₹3000', date: new Date(Date.now() - 5 * 86400000).toISOString() },
+              { _id: 'tx_2', type: 'bonus', amount: 300, description: 'Bonus credit of ₹300', date: new Date(Date.now() - 5 * 86400000).toISOString() },
+              { _id: 'tx_3', type: 'deduction', amount: prod1.price, description: `Delivery Deduction for ${prod1.name}`, date: new Date(Date.now() - 2 * 86400000).toISOString() },
+              { _id: 'tx_4', type: 'deduction', amount: prod2.price, description: `Delivery Deduction for ${prod2.name}`, date: new Date(Date.now() - 1 * 86400000).toISOString() },
+            ]
+          };
+
+          const mockSubscription = {
+            _id: 'sub_mock_1',
+            status: 'active',
+            schedule: [0, 1, 2, 3, 4, 5, 6].map(day => ({
+              dayOfWeek: day,
+              product: day % 2 === 0 ? prod1 : prod2,
+              isPaused: day === 0 // Sunday paused
+            })),
+            dietaryPreferences: ['Vegan', 'No Added Sugar'],
+            dietaryNote: 'Slight allergy to raw ginger'
+          };
+
+          set({ user: mockUser as any, wallet: mockWallet as any, subscription: mockSubscription as any, isBackendConnected: false });
+          return;
+        }
         const { token } = get();
         if (!token) return;
         try {
@@ -430,6 +520,10 @@ const useStore = create<AppStore>()(
       wallet: { balance: 0, bonusBalance: 0, transactions: [] },
 
       fetchWallet: async () => {
+        if (!get().isLiveMode) {
+          // Handled by fetchMe in mock mode
+          return;
+        }
         const { token } = get();
         if (!token) return;
         try {
@@ -529,6 +623,10 @@ const useStore = create<AppStore>()(
       subscriptions: [],
 
       fetchSubscriptions: async () => {
+        if (!get().isLiveMode) {
+          // Handled by fetchMe in mock mode
+          return;
+        }
         const { token } = get();
         if (!token) return;
         try {
@@ -580,6 +678,42 @@ const useStore = create<AppStore>()(
           if (!data.success) throw new Error(data.error);
           set({ subscription: data.subscription, isLoading: false });
           await get().fetchSubscriptions();
+        } catch (e) {
+          set({ isLoading: false });
+          throw e;
+        }
+      },
+
+      updateSubscription: async (subId, schedule) => {
+        if (!get().isLiveMode) {
+          const sub = get().subscription;
+          if (sub && sub._id === subId) {
+            const updatedSchedule = schedule.map((s: any) => ({
+               dayOfWeek: s.dayOfWeek,
+               product: s.productId,
+               isPaused: false
+            }));
+            set({ subscription: { ...sub, schedule: updatedSchedule } });
+          }
+          return;
+        }
+
+        const { token } = get();
+        if (!token) throw new Error('Not authenticated');
+        set({ isLoading: true });
+        try {
+          // This will invoke a full schedule update on the backend
+          const res = await fetch(`${API_URL}/subscriptions/${subId}/schedule`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ schedule }),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error);
+          set({ subscription: data.subscription, isLoading: false });
         } catch (e) {
           set({ isLoading: false });
           throw e;
@@ -668,6 +802,21 @@ const useStore = create<AppStore>()(
       orders: [],
 
       fetchOrders: async () => {
+        if (!get().isLiveMode) {
+          const adminProds = get().adminData.inventory;
+          const prod1 = adminProds[0]; // Green Vitality
+          const prod2 = adminProds[1]; // Citrus Glow
+
+          const mockOrders = [
+            { _id: 'ord_1', deliveryDate: new Date(Date.now() - 2 * 86400000).toISOString(), status: 'delivered', totalAmount: prod1.price, items: [{ product: prod1 }] },
+            { _id: 'ord_2', deliveryDate: new Date(Date.now() - 1 * 86400000).toISOString(), status: 'delivered', totalAmount: prod2.price, items: [{ product: prod2 }] },
+            { _id: 'ord_3', deliveryDate: new Date().toISOString(), status: 'out_for_delivery', totalAmount: prod1.price, items: [{ product: prod1 }] },
+            { _id: 'ord_4', deliveryDate: new Date(Date.now() + 1 * 86400000).toISOString(), status: 'scheduled', totalAmount: prod2.price, items: [{ product: prod2 }] },
+            { _id: 'ord_5', deliveryDate: new Date(Date.now() + 2 * 86400000).toISOString(), status: 'scheduled', totalAmount: prod1.price, items: [{ product: prod1 }] },
+          ];
+          set({ orders: mockOrders as any, isBackendConnected: false });
+          return;
+        }
         const { token } = get();
         if (!token) return;
         try {
@@ -774,19 +923,19 @@ const useStore = create<AppStore>()(
         ],
         allOrders: [
           {
-            _id: 'ord_1', user: { name: 'Sarah Jenkins', phone: '9900112233', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDZlOiPfUUaPcxaPfkqxhbbeQheAZii9NymCCZEc-4NcgsLxLjyeEeb0VitHyAV46hO03wr2mCf4s5ajqZ41qiIwmrdKwUmYoYqPufAFtyZX7Fej06FGgBHfqhJYXwkvZLusJqRw1jI7pL2WHqo0NZfBt5PexlAOgkpuoTuFMBsGSRqfQXBpz5qyG_c8Gj9DoxIp0Sn1H3GqFP9_Y-ZgxLsTaNA2HHHif5e6OreQSKD8LCtwq6gND00FsbjzVhT1FUcFseLId0pDGU' },
+            _id: 'ord_1', user: { name: 'Sarah Jenkins', phone: '9900112233', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sarah+Jenkins' },
             items: [{ product: { name: '3x Green Vitality, 2x Citrus Glow' }, quantity: 5, price: 85 }],
             deliveryDate: new Date().toISOString(), status: 'delivered', paymentStatus: 'paid',
             totalAmount: 255, deliveryAddress: 'Downtown B-12'
           },
           {
-            _id: 'ord_2', user: { name: 'Marcus Chen', phone: '9988776655', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA_qAv5HZPACLIluzoUao6Qp-UUN9J-U5yr75uC2Lf_UFhuVSfPOx0m0MR5hEbOKZRNauwzgZjtccwCpmcqProRgrpM801CJwB5wUKOtrR14kmoa4Uv170agORUvWOMayx4k2C3wXzLxQUyNJd8t-mSOBtDNEEoZ7lOmxqOyM866nPfw8qJ13S3RfkXV_IuavjoObWuo--fRtGvJ5CF6irTTHFDSijVkxH73xhQEZAsfc09W9XXFTt3rqJ5eb1OJFuXREwWWuqXl1c' },
+            _id: 'ord_2', user: { name: 'Marcus Chen', phone: '9988776655', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Marcus+Chen' },
             items: [{ product: { name: '5x Morning Detox Pack' }, quantity: 5, price: 90 }],
             deliveryDate: new Date().toISOString(), status: 'out_for_delivery', paymentStatus: 'paid',
             totalAmount: 450, deliveryAddress: 'West Side A-04'
           },
           {
-            _id: 'ord_3', user: { name: 'Elena Rodriguez', phone: '9876501234', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBJF3WnR0KgzK2-c6uk_kWLWgsOEBzPhukZifn9PA-aHURcVQO0DMu1AeMFPb_sLClQBo9_wDqS7k5e21_Wk-q3I6seLKLg-UYD-SsF9myaRHUxPzIK0w7HaW5PSDelD0A0LFFtPjErXuA9ZrBNLLZRYvdFxnVUFpspGX4tf_tUf123YARyHlFmALLgrJfE122JUqf811wV7ASGHgV6vm7HDD5ojXNozfrM5ZL3gHyy4I7s7yC2v7BGedJujVC6u-KGqP8K14vzFWs' },
+            _id: 'ord_3', user: { name: 'Elena Rodriguez', phone: '9876501234', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Elena+Rodriguez' },
             items: [{ product: { name: 'Weekly Renewal Plan' }, quantity: 1, price: 500 }],
             deliveryDate: new Date().toISOString(), status: 'pending', paymentStatus: 'paid',
             totalAmount: 500, deliveryAddress: 'North Hills C-09'
@@ -831,11 +980,22 @@ const useStore = create<AppStore>()(
           deliverySnapshot: {
             totalDrops: 22,
             zones: [
-              { name: 'Downtown', drops: 9 },
-              { name: 'West Side', drops: 7 },
-              { name: 'North Hills', drops: 6 },
+              { name: 'Dindoli', total: 9, delivered: 6 },
+              { name: 'Vesu', total: 7, delivered: 7 },
+              { name: 'Adajan', total: 6, delivered: 2 },
             ]
-          }
+          },
+          growth: {
+            newSignups: 5,
+            churnRisk: 1,
+          },
+          activityFeed: [
+            { type: 'topup', text: 'Sarah Jenkins topped up ₹1500', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sarah+Jenkins', time: new Date(Date.now() - 10 * 60000).toISOString() },
+            { type: 'delivery', text: 'Delivered to Marcus Chen at Madhav Villa', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Marcus+Chen', time: new Date(Date.now() - 25 * 60000).toISOString() },
+            { type: 'delivery', text: 'Delivered to Sofia Miller at Sun City', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sofia+Miller', time: new Date(Date.now() - 40 * 60000).toISOString() },
+            { type: 'topup', text: 'Elena Rodriguez topped up ₹800', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Elena+Rodriguez', time: new Date(Date.now() - 55 * 60000).toISOString() },
+            { type: 'delivery', text: 'Delivered to Priya Patel at Madhav Villa', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Priya+Patel', time: new Date(Date.now() - 70 * 60000).toISOString() },
+          ],
         },
       },
 
@@ -851,6 +1011,7 @@ const useStore = create<AppStore>()(
             case 'stats': endpoint = '/subscriptions/stats'; break;
             case 'procurement': endpoint = '/admin/procurement'; break;
             case 'recipes': endpoint = '/admin/recipes'; break;
+            case 'overview': endpoint = '/admin/overview'; break;
           }
 
           const res = await fetch(`${API_URL}${endpoint}`, {
@@ -872,6 +1033,7 @@ const useStore = create<AppStore>()(
                 ...(type === 'stats' && data.stats ? { stats: data.stats } : {}),
                 ...(type === 'procurement' ? { procurement: data.ingredients || [] } : {}),
                 ...(type === 'recipes' && data.recipes?.length > 0 ? { recipes: data.recipes } : {}),
+                ...(type === 'overview' && data.stats ? { stats: data.stats } : {}),
               },
               isBackendConnected: true
             }));

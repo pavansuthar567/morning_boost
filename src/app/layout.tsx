@@ -7,7 +7,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'Morning Fresh — Cold-Pressed Juice Delivery',
+  title: 'Morning Boost — Cold-Pressed Juice Delivery',
   description: 'Subscribe to daily cold-pressed juice delivery. Fresh, raw, and at your doorstep every morning.',
 };
 

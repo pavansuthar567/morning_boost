@@ -114,14 +114,12 @@ export default function AdminProcurementPage() {
           <h1 className="font-headline text-3xl font-extrabold tracking-tight text-on-surface">Procurement List</h1>
           <p className="text-on-surface-variant text-sm mt-1">What to buy today based on active subscription orders.</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={handlePrint} className="bg-surface-container-highest text-slate-600 hover:bg-slate-200 px-5 py-2.5 rounded-full font-headline font-bold text-xs transition-all flex items-center gap-2 cursor-pointer">
-            <span className="material-symbols-outlined text-sm">print</span>
-            Print List
+        <div className="flex items-center gap-2">
+          <button onClick={handleExportCSV} className="bg-white border border-slate-200 text-slate-600 w-10 h-10 rounded-xl font-headline font-bold text-xs shadow-sm hover:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center cursor-pointer" title="Export CSV">
+            <span className="material-symbols-outlined text-[18px]">download</span>
           </button>
-          <button onClick={handleExportCSV} className="bg-vibrant-orange text-white px-5 py-2.5 rounded-full font-headline font-bold text-xs shadow-lg shadow-primary/10 active:scale-95 transition-transform flex items-center gap-2 cursor-pointer">
-            <span className="material-symbols-outlined text-sm">download</span>
-            Export CSV
+          <button onClick={handlePrint} className="bg-white border border-slate-200 text-slate-600 w-10 h-10 rounded-xl font-headline font-bold text-xs shadow-sm hover:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center cursor-pointer" title="Print List">
+            <span className="material-symbols-outlined text-[18px]">print</span>
           </button>
         </div>
       </div>

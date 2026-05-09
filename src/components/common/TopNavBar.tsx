@@ -14,7 +14,7 @@ export default function TopNavBar() {
     <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl shadow-sm h-20 border-b border-slate-100 flex items-center font-headline antialiased tracking-tight">
       <div className="flex justify-between items-center px-8 w-full max-w-[1440px] mx-auto relative">
         <Link href="/" className="text-2xl font-black text-primary italic cursor-pointer">
-          Morning Fresh
+          Morning Boost
         </Link>
         <div className="hidden md:flex items-center space-x-8">
           <Link
@@ -46,9 +46,11 @@ export default function TopNavBar() {
               <Link href="/login" className="px-6 py-2.5 rounded-full text-slate-600 font-semibold hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">
                 Login
               </Link>
-              <Link href="/subscribe" className="vitality-gradient px-8 py-2.5 rounded-full text-white font-bold active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-900/10">
-                Subscribe
-              </Link>
+              {pathname !== '/subscribe' && (
+                <Link href="/subscribe" className="vitality-gradient px-8 py-2.5 rounded-full text-white font-bold active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-900/10">
+                  Subscribe
+                </Link>
+              )}
             </>
           )}
         </div>

@@ -35,10 +35,10 @@ export default function AuthGuard({ children, requiredRole }: { children: React.
       if (user && requiredRole && user.role !== requiredRole) {
         // If they are admin trying to access user dash, maybe allow? 
         // But usually, redirect to their respective dashboard
-        if (user.role === 'admin') router.push('/admin-dashboard');
-        else if (user.role === 'delivery') router.push('/driver-dashboard');
-        else router.push('/dashboard');
-        return;
+        // if (user.role === 'admin') router.push('/admin-dashboard');
+        // else if (user.role === 'delivery') router.push('/driver-dashboard');
+        // else router.push('/dashboard');
+        // return;
       }
 
       setIsChecking(false);

@@ -66,7 +66,8 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Check wallet balance
+      // Check wallet balance — pause subscription if insufficient, but do NOT deduct yet.
+      // Wallet deduction happens when the order status is changed to 'delivered'.
       const wallet = await Wallet.findOne({ user: sub.user });
       const totalBalance = (wallet?.balance || 0) + (wallet?.bonusBalance || 0);
 
@@ -77,29 +78,6 @@ export async function POST(req: NextRequest) {
         ordersFailed++;
         results.push(`Paused ${sub.user}: insufficient balance (₹${totalBalance} < ₹${product.price})`);
         continue;
-      }
-
-      // Deduct from wallet (bonus first, then balance)
-      let remaining = product.price;
-      if (wallet) {
-        if (wallet.bonusBalance >= remaining) {
-          wallet.bonusBalance -= remaining;
-          remaining = 0;
-        } else {
-          remaining -= wallet.bonusBalance;
-          wallet.bonusBalance = 0;
-          wallet.balance -= remaining;
-          remaining = 0;
-        }
-
-        wallet.transactions.push({
-          type: 'deduction',
-          amount: product.price,
-          description: `${product.name} delivery on ${targetDate.toLocaleDateString()}`,
-          date: new Date(),
-        });
-
-        await wallet.save();
       }
 
       // Create order
@@ -115,7 +93,7 @@ export async function POST(req: NextRequest) {
         deliveryAddress: sub.deliveryAddress,
         timeSlot: sub.timeSlot,
         status: 'pending',
-        paymentStatus: 'wallet_deducted',
+        paymentStatus: 'pending',
         totalAmount: product.price,
       });
 

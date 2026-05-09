@@ -26,13 +26,13 @@ function calculateBonus(amount: number): number {
 
 export default function Checkout() {
   const router = useRouter();
-  const { user, checkoutData, setCheckoutData, createTopUpOrder, verifyTopUp, addAddress, createSubscription, wallet, isLiveMode } = useStore();
+  const { user, checkoutData, setCheckoutData, createTopUpOrder, verifyTopUp, addAddress, createSubscription, wallet, isLiveMode, config } = useStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
-  const [topUpAmount, setTopUpAmount] = useState(3000);
+  const [topUpAmount, setTopUpAmount] = useState(checkoutData?.topUpAmount || 3000);
   const [customAmount, setCustomAmount] = useState('');
 
   const [newAddress, setNewAddress] = useState({
@@ -51,6 +51,12 @@ export default function Checkout() {
       setSelectedAddressId(def._id || null);
     }
   }, [router, user, selectedAddressId]);
+
+  useEffect(() => {
+    if (checkoutData?.topUpAmount) {
+      setTopUpAmount(checkoutData.topUpAmount);
+    }
+  }, [checkoutData?.topUpAmount]);
 
   // If no checkoutData, we can still allow wallet top-ups, we just won't show the subscription summary.
   const scheduleData = checkoutData?.schedule;
@@ -471,7 +477,10 @@ export default function Checkout() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Society / Building Name</label>
-                    <input required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})} placeholder="e.g. Green Valley Soc." type="text" />
+                    <select required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})}>
+                      <option value="">Select Society...</option>
+                      {config.societies.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Flat / House No.</label>
@@ -483,7 +492,10 @@ export default function Checkout() {
                   </div>
                   <div className="col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Area / Area Landmark</label>
-                    <input required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})} placeholder="Opp. Central Park" type="text" />
+                    <select required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})}>
+                      <option value="">Select Area...</option>
+                      {config.areas.map((a: string) => <option key={a} value={a}>{a}</option>)}
+                    </select>
                   </div>
                 </div>
                 <button 

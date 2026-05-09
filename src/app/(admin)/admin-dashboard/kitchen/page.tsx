@@ -4,9 +4,10 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import useStore from '@/store/useStore';
 
 export default function AdminKitchenPage() {
-  const { token, isLiveMode, adminData } = useStore();
+  const { token, isLiveMode, adminData, mockDeliveryRuns } = useStore();
 
   const [juices, setJuices] = useState<any[]>([]);
+  const [drops, setDrops] = useState<any[]>([]);
   const [selectedJuiceName, setSelectedJuiceName] = useState<string | null>(null);
   const [washedItems, setWashedItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -32,6 +33,9 @@ export default function AdminKitchenPage() {
         };
       });
       setJuices(demoJuices);
+      // Load drops from mock delivery runs
+      const mockDrops = mockDeliveryRuns?.[0]?.drops || [];
+      setDrops(mockDrops);
       setWashedItems([]);
       setIsLoading(false);
       return;
@@ -70,12 +74,23 @@ export default function AdminKitchenPage() {
 
         setJuices(liveJuices);
       }
+
+      // Also fetch today's delivery run for subscriber drops
+      try {
+        const runRes = await fetch('/api/admin/delivery-runs', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const runData = await runRes.json();
+        if (runData.success && runData.runs?.length > 0) {
+          setDrops(runData.runs[0].drops || []);
+        }
+      } catch { /* drops are optional */ }
     } catch (e) {
       console.error('Failed to fetch production data:', e);
     } finally {
       setIsLoading(false);
     }
-  }, [isLiveMode, token, adminData]);
+  }, [isLiveMode, token, adminData, mockDeliveryRuns]);
 
   useEffect(() => {
     fetchProductionData();
@@ -184,6 +199,64 @@ export default function AdminKitchenPage() {
   };
 
   const selectedJuice = juices.find(j => j.name === selectedJuiceName);
+
+  // Find drops with special notes for the selected juice
+  const specialDrops = useMemo(() => {
+    if (!selectedJuiceName) return [];
+    return drops.filter((d: any) =>
+      d.scheduledJuice === selectedJuiceName &&
+      d.status !== 'skipped' &&
+      d.notes &&
+      !d.notes.toLowerCase().includes('insufficient balance')
+    );
+  }, [selectedJuiceName, drops]);
+
+  // All drops for the selected juice (for label printing)
+  const batchDrops = useMemo(() => {
+    if (!selectedJuiceName) return [];
+    return drops.filter((d: any) =>
+      d.scheduledJuice === selectedJuiceName && d.status !== 'skipped'
+    );
+  }, [selectedJuiceName, drops]);
+
+  // Print labels
+  const printLabels = () => {
+    const labelsToPrint = batchDrops;
+    if (labelsToPrint.length === 0) return;
+    const slogans = [
+      'Pressed fresh, just for you ☀️',
+      'Your daily dose of sunshine 🌿',
+      'Sip smart. Live fresh. 💚',
+      'Made with love this morning 🌅',
+      'Fresh from our kitchen to yours ✨',
+    ];
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) return;
+    const labelsHtml = labelsToPrint.map((d: any) => {
+      const hasNote = d.notes && !d.notes.toLowerCase().includes('insufficient balance');
+      const slogan = slogans[Math.floor(Math.random() * slogans.length)];
+      return `
+        <div style="border:1.5px solid #000;padding:6px 10px;margin:4px;width:144px;height:108px;font-family:Arial,sans-serif;page-break-inside:avoid;border-radius:6px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="font-size:8px;font-weight:900;letter-spacing:0.5px;margin-bottom:3px;">🧃 MORNING BOOST</div>
+          <div style="font-size:11px;font-weight:900;line-height:1.2;">${d.subscriberName}</div>
+          <div style="font-size:9px;color:#444;margin:2px 0 4px;">${d.flatNo} • ${d.society}</div>
+          <div style="font-size:10px;font-weight:700;border-top:1px solid #000;padding-top:4px;">${d.scheduledJuice}</div>
+          ${hasNote ? `<div style="font-size:8px;margin-top:3px;border-top:1px dashed #000;padding-top:3px;line-height:1.2;">&#9888; ${d.notes}</div>` : ''}
+          <div style="margin-top:auto;font-size:7px;font-style:italic;color:#555;text-align:center;padding-top:3px;">${slogan}</div>
+        </div>
+      `;
+    }).join('');
+    printWindow.document.write(`
+      <html><head><title>Labels - ${selectedJuiceName}</title>
+      <style>@media print{body{margin:0}@page{margin:5mm;}}</style></head>
+      <body style="display:flex;flex-wrap:wrap;padding:4px;">
+        ${labelsHtml}
+      </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   if (isLoading) {
     return (
@@ -308,22 +381,33 @@ export default function AdminKitchenPage() {
                       : `Scale, peel, cut and juice for ${selectedJuice?.qty} units.`}
                   </p>
                 </div>
-                {selectedJuiceName && selectedJuice?.status !== 'produced' && (
-                  <button
-                    onClick={() => completeBatch(selectedJuice!.id)}
-                    disabled={isProcessing || !allWashed}
-                    className="px-6 py-2.5 rounded-xl font-headline font-black text-xs uppercase tracking-widest transition-all shadow-md cursor-pointer bg-vibrant-orange text-white shadow-primary/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isProcessing ? 'Deducting Stock...' : !allWashed ? 'Wash First' : 'Complete Batch'}
-                  </button>
-                )}
-                {selectedJuiceName && selectedJuice?.status === 'produced' && (
-                  <button
-                    onClick={() => undoBatch(selectedJuice!.id)}
-                    className="px-6 py-2.5 rounded-xl font-headline font-black text-xs uppercase tracking-widest bg-green-500 text-white shadow-md shadow-green-100 cursor-pointer"
-                  >
-                    ✓ Batch Produced
-                  </button>
+                {selectedJuiceName && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={printLabels}
+                      disabled={batchDrops.length === 0}
+                      className="px-4 py-2.5 rounded-xl font-headline font-black text-xs uppercase tracking-widest transition-all border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base">print</span>
+                      Print Labels
+                    </button>
+                    {selectedJuice?.status !== 'produced' ? (
+                      <button
+                        onClick={() => completeBatch(selectedJuice!.id)}
+                        disabled={isProcessing || !allWashed}
+                        className="px-6 py-2.5 rounded-xl font-headline font-black text-xs uppercase tracking-widest transition-all shadow-md cursor-pointer bg-vibrant-orange text-white shadow-primary/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isProcessing ? 'Deducting Stock...' : !allWashed ? 'Wash First' : 'Complete Batch'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => undoBatch(selectedJuice!.id)}
+                        className="px-6 py-2.5 rounded-xl font-headline font-black text-xs uppercase tracking-widest bg-green-500 text-white shadow-md shadow-green-100 cursor-pointer"
+                      >
+                        ✓ Batch Produced
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -372,6 +456,7 @@ export default function AdminKitchenPage() {
                   </table>
                 </div>
               ) : (
+                <>
                 <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
                   {/* Left: Ingredients */}
                   <div className="flex-1">
@@ -434,6 +519,36 @@ export default function AdminKitchenPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Special Requirements - Full Width Below */}
+                {specialDrops.length > 0 && (
+                  <div className="border-t border-slate-100">
+                    <div className="px-6 pt-5 pb-3">
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">warning</span>
+                        Special Requirements ({specialDrops.length})
+                      </h3>
+                    </div>
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {specialDrops.map((drop: any, idx: number) => (
+                        <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-amber-50/60 border border-amber-100">
+                          <div className="w-7 h-7 rounded-full overflow-hidden bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                            {drop.avatar ? (
+                              <img alt="" className="w-full h-full object-cover" src={drop.avatar} />
+                            ) : (
+                              <span className="text-[10px] font-bold text-primary">{drop.subscriberName?.charAt(0)}</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-800">{drop.subscriberName} <span className="text-slate-400 font-medium">• {drop.flatNo}, {drop.society}</span></p>
+                            <p className="text-xs text-amber-700 font-medium mt-0.5">⚠ {drop.notes}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                </>
               )}
             </div>
           </div>
