@@ -13,7 +13,7 @@ export async function PATCH(
     await dbConnect();
 
     const { dropId: subscriberId } = await params;
-    const { runId } = await req.json();
+    const { runId, overrideReason } = await req.json();
 
     const { default: DeliveryRun } = await import('@/lib/models/DeliveryRun');
     const { default: Order } = await import('@/lib/models/Order');
@@ -30,8 +30,12 @@ export async function PATCH(
 
     drop.status = 'delivered';
     drop.deliveredAt = new Date();
-    // Architecture hook: PoD photo URL can be attached here later
-    // drop.podPhotoUrl = podPhotoUrl;
+
+    // Persist manual override reason if driver bypassed QR scanner
+    if (overrideReason && typeof overrideReason === 'string') {
+      drop.manualOverrideReason = overrideReason.trim();
+    }
+
     await run.save();
 
     // 2. Update the corresponding Order status (which triggers wallet deduction via order model)
@@ -51,7 +55,7 @@ export async function PATCH(
       await order.save();
     }
 
-    return ok({ message: 'Drop marked as delivered' });
+    return ok({ message: 'Drop marked as delivered', manualOverrideReason: drop.manualOverrideReason || null });
   } catch (err: any) {
     console.error('Mark delivered error:', err);
     return error(err.message || 'Server error', 500);

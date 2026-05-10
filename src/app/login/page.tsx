@@ -110,6 +110,16 @@ export default function Login() {
               >
                 🚧 Dev: Bypass Login (No DB)
               </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  useStore.getState().bypassLogin('delivery');
+                  router.push('/driver');
+                }}
+                className="w-full bg-blue-50 text-blue-600 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-blue-100 transition-colors border border-blue-100"
+              >
+                🚗 Dev: Driver Bypass (No DB)
+              </button>
             </>
           )}
           <p className="text-center text-sm text-slate-500">

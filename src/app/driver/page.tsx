@@ -1,16 +1,29 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import useStore from '@/store/useStore';
 import Link from 'next/link';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 type TabType = 'loadout' | 'drops';
 
 export default function DriverDashboard() {
-  const { user, logout, driverRun, fetchDriverRun, markDropDelivered } = useStore();
-  const [activeTab, setActiveTab] = useState<TabType>('drops');
+  const { user, logout, driverRun, fetchDriverRun, markDropDelivered, markDropPickedUp, startDeliveryRun } = useStore();
+  const [activeTab, setActiveTab] = useState<TabType>('loadout');
   const [confirmDrop, setConfirmDrop] = useState<any | null>(null);
   const [isMarking, setIsMarking] = useState(false);
+  const [isStartingRun, setIsStartingRun] = useState(false);
+  
+  // Scanner & Pick-up state
+  const [expandedJuice, setExpandedJuice] = useState<string | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannedDrop, setScannedDrop] = useState<any | null>(null);
+  
+  // Manual Override State
+  const [manualOverrideDrop, setManualOverrideDrop] = useState<any | null>(null);
+  const [isManualDelivery, setIsManualDelivery] = useState(false);
+  const [overrideReason, setOverrideReason] = useState<string>('');
+  const overrideReasons = ['Label Missing / Torn', 'QR Code Damaged', 'Camera Not Working', 'Other'];
 
   useEffect(() => {
     fetchDriverRun();
@@ -19,23 +32,33 @@ export default function DriverDashboard() {
   // --- Derived Data ---
   const drops = useMemo(() => driverRun?.drops || [], [driverRun]);
 
-  const pendingDrops = useMemo(() => drops.filter((d: any) => d.status === 'pending'), [drops]);
+  const pendingDrops = useMemo(() => drops.filter((d: any) => d.status === 'pending' || d.status === 'picked_up' || d.status === 'out_for_delivery'), [drops]);
   const deliveredDrops = useMemo(() => drops.filter((d: any) => d.status === 'delivered'), [drops]);
   const skippedDrops = useMemo(() => drops.filter((d: any) => d.status === 'skipped'), [drops]);
 
-  const progress = drops.length > 0 ? Math.round((deliveredDrops.length / drops.length) * 100) : 0;
+  const activeDrops = useMemo(() => drops.filter((d: any) => d.status !== 'skipped'), [drops]);
 
-  // Morning Load-Out: aggregate totals by juice
-  const loadOut = useMemo(() => {
-    const juiceCounts: Record<string, number> = {};
+  const progress = activeDrops.length > 0 ? Math.round((deliveredDrops.length / activeDrops.length) * 100) : 0;
+
+  // Morning Load-Out: group active drops by juice
+  const loadOutGroups = useMemo(() => {
+    const groups: Record<string, any[]> = {};
     drops.forEach((d: any) => {
       if (d.status !== 'skipped') {
         const juice = d.scheduledJuice || 'Unknown';
-        juiceCounts[juice] = (juiceCounts[juice] || 0) + 1;
+        if (!groups[juice]) groups[juice] = [];
+        groups[juice].push(d);
       }
     });
-    return Object.entries(juiceCounts).map(([name, count]) => ({ name, count }));
+    return Object.entries(groups).map(([name, items]) => ({ name, items }));
   }, [drops]);
+
+  const pickedUpCount = useMemo(() => activeDrops.filter((d: any) => d.status === 'picked_up' || d.status === 'out_for_delivery' || d.status === 'delivered').length, [activeDrops]);
+  const allPickedUp = activeDrops.length > 0 && pickedUpCount === activeDrops.length;
+  
+  const runStarted = useMemo(() => {
+    return drops.some((d:any) => d.status === 'out_for_delivery' || d.status === 'delivered') || driverRun?.status === 'out_for_delivery';
+  }, [drops, driverRun]);
 
   // Group pending drops by society for routing
   const groupedPending = useMemo(() => {
@@ -62,13 +85,69 @@ export default function DriverDashboard() {
   const handleMarkDelivered = async () => {
     if (!confirmDrop || !driverRun) return;
     setIsMarking(true);
-    await markDropDelivered(driverRun._id, confirmDrop.subscriberId);
+    // Pass override reason only for manual deliveries (QR was bypassed)
+    const reason = isManualDelivery && overrideReason ? overrideReason : undefined;
+    await markDropDelivered(driverRun._id, confirmDrop.subscriberId, reason);
     setIsMarking(false);
     setConfirmDrop(null);
+    setScannedDrop(null);
+    setOverrideReason('');
+    setIsManualDelivery(false);
   };
 
+  const handleStartRun = async () => {
+    if (!driverRun || !allPickedUp) return;
+    setIsStartingRun(true);
+    await startDeliveryRun(driverRun._id);
+    setIsStartingRun(false);
+    setActiveTab('drops');
+  };
+
+  const handlePickUp = (subscriberId: string) => {
+    markDropPickedUp(subscriberId);
+    setScannedDrop(null);
+  };
+
+  // QR Scanner Initialization
+  useEffect(() => {
+    if (!isScannerOpen) {
+      setScannedDrop(null);
+      return;
+    }
+    
+    const scanner = new Html5QrcodeScanner(
+      "reader",
+      { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+      false
+    );
+
+    scanner.render((decodedText) => {
+      // Find drop by token
+      const drop = drops.find((d: any) => d.dropToken === decodedText);
+      if (drop) {
+        setScannedDrop(drop);
+        // Play success beep
+        if (typeof window !== 'undefined') {
+          const audio = new Audio('/success-beep.mp3'); // Assuming you add one, or browser defaults
+          audio.play().catch(() => {});
+        }
+        scanner.clear();
+        setIsScannerOpen(false);
+      } else {
+        alert("Invalid QR or Drop Token not found.");
+      }
+    }, (err) => {
+      // Ignored: fires continuously while scanning
+    });
+
+    return () => {
+      scanner.clear().catch(e => console.error("Scanner clear error", e));
+    };
+  }, [isScannerOpen, drops]);
+
   return (
-    <div className="min-h-screen bg-slate-50 font-body">
+    <div className="min-h-screen bg-slate-100 font-body flex justify-center">
+      <div className="w-full max-w-md bg-slate-50 min-h-screen shadow-2xl relative flex flex-col">
 
       {/* Sticky Header */}
       <header className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
@@ -100,7 +179,7 @@ export default function DriverDashboard() {
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-500">
-                  <span className="text-slate-900 font-black">{deliveredDrops.length}</span> / {drops.length} drops delivered
+                  <span className="text-slate-900 font-black">{deliveredDrops.length}</span> / {activeDrops.length} drops delivered
                 </span>
                 <span className={`text-xs font-black ${progress === 100 ? 'text-green-600' : 'text-slate-400'}`}>
                   {progress}%
@@ -152,18 +231,60 @@ export default function DriverDashboard() {
                 </div>
               </div>
               <div className="divide-y divide-slate-50">
-                {loadOut.length > 0 ? loadOut.map(({ name, count }) => {
+                {loadOutGroups.length > 0 ? loadOutGroups.map(({ name, items }) => {
                   const style = getJuiceStyle(name);
+                  const isExpanded = expandedJuice === name;
+                  const pickedCount = items.filter((i:any) => i.status === 'picked_up' || i.status === 'out_for_delivery' || i.status === 'delivered').length;
+                  const allPicked = pickedCount === items.length;
+
                   return (
-                    <div key={name} className="flex items-center justify-between px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <span className={`w-3 h-3 rounded-full shrink-0 ${style.dot}`}></span>
-                        <span className="font-bold text-slate-800">{name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-2xl font-black ${style.text}`}>{count}</span>
-                        <span className="text-xs text-slate-400 font-semibold">bottles</span>
-                      </div>
+                    <div key={name} className="flex flex-col">
+                      <button 
+                        onClick={() => setExpandedJuice(isExpanded ? null : name)}
+                        className={`flex items-center justify-between px-5 py-4 transition-colors ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`w-3 h-3 rounded-full shrink-0 ${allPicked ? 'bg-green-500' : style.dot}`}></span>
+                          <div className="text-left">
+                            <span className={`font-bold ${allPicked ? 'text-green-700' : 'text-slate-800'}`}>{name}</span>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{pickedCount}/{items.length} Picked</p>
+                          </div>
+                        </div>
+                        {allPicked ? (
+                          <span className="material-symbols-outlined text-green-500">check_circle</span>
+                        ) : (
+                          <span className={`material-symbols-outlined text-slate-300 transition-transform ${isExpanded ? 'rotate-90' : ''}`}>chevron_right</span>
+                        )}
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="px-5 py-3 bg-slate-50 border-y border-slate-100 space-y-2">
+                          {items.map((drop: any) => {
+                            const isPicked = drop.status === 'picked_up' || drop.status === 'out_for_delivery' || drop.status === 'delivered';
+                            return (
+                              <button
+                                key={drop.subscriberId}
+                                onClick={() => !isPicked && setManualOverrideDrop(drop)}
+                                disabled={isPicked}
+                                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                  isPicked 
+                                    ? 'bg-green-50 border-green-200 opacity-70' 
+                                    : 'bg-white border-slate-200 hover:border-orange-300 shadow-sm'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className={`material-symbols-outlined ${isPicked ? 'text-green-500' : 'text-slate-300'}`}>
+                                    {isPicked ? 'task_alt' : 'radio_button_unchecked'}
+                                  </span>
+                                  <div className="text-left">
+                                    <p className={`text-sm font-bold ${isPicked ? 'text-green-700' : 'text-slate-700'}`}>{drop.dropToken || 'No Token'}</p>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 }) : (
@@ -173,12 +294,33 @@ export default function DriverDashboard() {
                   </div>
                 )}
               </div>
-              {loadOut.length > 0 && (
-                <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex justify-between">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Bottles</span>
-                  <span className="text-sm font-black text-slate-800">
-                    {loadOut.reduce((sum, i) => sum + i.count, 0)} bottles
-                  </span>
+              {loadOutGroups.length > 0 && (
+                <div className="p-5 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Progress</span>
+                    <span className="text-sm font-black text-slate-800">{pickedUpCount}/{activeDrops.length} Picked</span>
+                  </div>
+                  
+                  <button
+                    onClick={handleStartRun}
+                    disabled={!allPickedUp || isStartingRun || runStarted}
+                    className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                      runStarted ? 'bg-green-100 text-green-700' :
+                      allPickedUp 
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-900/20 active:scale-[0.98]' 
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {isStartingRun ? (
+                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Starting...</>
+                    ) : runStarted ? (
+                      <><span className="material-symbols-outlined text-base">local_shipping</span> Run in Progress</>
+                    ) : allPickedUp ? (
+                      <><span className="material-symbols-outlined text-base">rocket_launch</span> Start Delivery Run</>
+                    ) : (
+                      <><span className="material-symbols-outlined text-base">lock</span> Pick all to start</>
+                    )}
+                  </button>
                 </div>
               )}
             </div>
@@ -249,11 +391,16 @@ export default function DriverDashboard() {
                               </div>
 
                               {/* Juice badge */}
-                              <div className="mt-3 flex items-center gap-2">
+                              <div className="mt-3 flex items-center justify-between gap-2">
                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black ${style.bg} ${style.text}`}>
                                   <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`}></span>
                                   {drop.scheduledJuice}
                                 </span>
+                                {drop.dropToken && (
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 border border-slate-200 px-2 py-1 rounded-md bg-slate-50">
+                                    #{drop.dropToken}
+                                  </span>
+                                )}
                               </div>
 
                               {/* Special notes */}
@@ -267,11 +414,16 @@ export default function DriverDashboard() {
 
                             {/* Mark Delivered CTA */}
                             <button
-                              onClick={() => setConfirmDrop(drop)}
-                              className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:brightness-90 transition-all cursor-pointer"
+                              onClick={() => { setConfirmDrop(drop); setIsManualDelivery(true); setOverrideReason(''); }}
+                              disabled={!runStarted}
+                              className={`w-full py-3.5 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                                runStarted 
+                                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white active:brightness-90 cursor-pointer' 
+                                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              }`}
                             >
-                              <span className="material-symbols-outlined text-base">check_circle</span>
-                              Mark as Delivered
+                              <span className="material-symbols-outlined text-base">{runStarted ? 'check_circle' : 'lock'}</span>
+                              {runStarted ? 'Mark as Delivered' : 'Start Run First'}
                             </button>
                           </div>
                         );
@@ -300,7 +452,8 @@ export default function DriverDashboard() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-sm text-slate-700 truncate">{drop.subscriberName}</p>
-                            <p className="text-xs text-slate-400">{drop.flatNo} · {drop.deliveredAt}</p>
+                            <p className="text-xs text-slate-500 truncate">{drop.flatNo}, {drop.society}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{drop.area} · <span className="font-semibold text-green-600">Delivered at {drop.deliveredAt}</span></p>
                           </div>
                           <span className="material-symbols-outlined text-green-500 text-xl">check_circle</span>
                         </div>
@@ -392,13 +545,31 @@ export default function DriverDashboard() {
               )}
             </div>
 
+            {isManualDelivery && (
+              <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">Bypassing Scanner</p>
+                <div className="space-y-2">
+                  {overrideReasons.map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setOverrideReason(r)}
+                      className={`w-full p-2.5 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between ${overrideReason === r ? 'bg-orange-50 border-orange-400 text-orange-800 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300'}`}
+                    >
+                      {r}
+                      {overrideReason === r && <span className="material-symbols-outlined text-orange-500 text-[16px]">check_circle</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <p className="text-center text-sm text-slate-500 mb-5 font-medium">
               Confirm delivery to this customer?
             </p>
 
             <div className="flex gap-3">
               <button
-                onClick={() => setConfirmDrop(null)}
+                onClick={() => { setConfirmDrop(null); setIsManualDelivery(false); setOverrideReason(''); }}
                 disabled={isMarking}
                 className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
               >
@@ -406,8 +577,8 @@ export default function DriverDashboard() {
               </button>
               <button
                 onClick={handleMarkDelivered}
-                disabled={isMarking}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black text-sm shadow-lg shadow-green-900/20 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-70 flex items-center justify-center gap-2"
+                disabled={isMarking || (isManualDelivery && !overrideReason)}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black text-sm shadow-lg shadow-green-900/20 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
               >
                 {isMarking ? (
                   <>
@@ -425,6 +596,157 @@ export default function DriverDashboard() {
           </div>
         </div>
       )}
+
+      {/* Scanned Drop Action Modal */}
+      {scannedDrop && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setScannedDrop(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in slide-in-from-bottom-4 duration-200 border-2 border-vibrant-orange">
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-vibrant-orange rounded-full flex items-center justify-center text-white shadow-lg border-4 border-white">
+              <span className="material-symbols-outlined">qr_code_scanner</span>
+            </div>
+            
+            <div className="text-center mb-6 mt-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-orange-500 mb-1">Scanned Token</p>
+              <h2 className="text-3xl font-black text-slate-900 font-mono tracking-wider">{scannedDrop.dropToken}</h2>
+              
+              <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 text-left">
+                <p className="font-bold text-slate-900">{scannedDrop.subscriberName}</p>
+                <p className="text-sm text-slate-500">{scannedDrop.flatNo}, {scannedDrop.society}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${getJuiceStyle(scannedDrop.scheduledJuice).dot}`}></span>
+                  <p className={`text-xs font-bold ${getJuiceStyle(scannedDrop.scheduledJuice).text}`}>{scannedDrop.scheduledJuice}</p>
+                </div>
+                {scannedDrop.notes && (
+                  <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-left">
+                    <span className="material-symbols-outlined text-amber-500 text-sm mt-0.5">warning</span>
+                    <p className="text-xs text-amber-700 font-semibold">{scannedDrop.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {scannedDrop.status === 'delivered' ? (
+                <div className="w-full py-3 bg-green-50 text-green-600 font-bold rounded-xl flex justify-center items-center gap-2">
+                  <span className="material-symbols-outlined text-xl">check_circle</span>
+                  Already Delivered
+                </div>
+              ) : scannedDrop.status === 'pending' ? (
+                <button
+                  onClick={() => handlePickUp(scannedDrop.subscriberId)}
+                  className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-orange-900/20 flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined">front_hand</span>
+                  Mark as Picked Up
+                </button>
+              ) : scannedDrop.status === 'picked_up' && !runStarted ? (
+                <div className="w-full py-3 bg-slate-100 text-slate-500 font-bold rounded-xl flex justify-center items-center gap-2 text-sm text-center">
+                  <span className="material-symbols-outlined text-xl">lock</span>
+                  Start Delivery Run before delivering.
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setConfirmDrop(scannedDrop); setIsManualDelivery(false); setScannedDrop(null); }}
+                  className="w-full py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined">local_shipping</span>
+                  Mark as Delivered
+                </button>
+              )}
+              
+              <button
+                onClick={() => setScannedDrop(null)}
+                className="w-full py-3 text-slate-400 font-bold text-sm hover:bg-slate-50 rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Scanner Modal Overlay */}
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
+          <button 
+            onClick={() => setIsScannerOpen(false)}
+            className="absolute top-6 right-6 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white backdrop-blur-md z-10"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+          
+          <div className="w-full max-w-sm px-6">
+            <h3 className="text-white font-headline font-black text-2xl text-center mb-6">Scan Bottle Label</h3>
+            <div className="rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
+              <div id="reader" className="w-full"></div>
+            </div>
+            <p className="text-white/50 text-sm text-center mt-6">Align the QR code within the frame.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Button for Scanner */}
+      <div className="fixed bottom-6 w-full max-w-md mx-auto pointer-events-none flex justify-end px-6 z-40">
+        <button
+          onClick={() => setIsScannerOpen(true)}
+          className="pointer-events-auto w-16 h-16 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full shadow-2xl shadow-orange-900/30 text-white flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <span className="material-symbols-outlined text-3xl">qr_code_scanner</span>
+        </button>
+      </div>
+
+      {/* Manual Override Reason Modal */}
+      {manualOverrideDrop && (
+        <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex flex-col items-center justify-end md:justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-8 md:slide-in-from-bottom-0 md:zoom-in-95 duration-300">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                <span className="material-symbols-outlined">warning</span>
+              </div>
+              <h3 className="font-headline font-black text-xl text-slate-900 text-center mb-1">Manual Pick-Up</h3>
+              <p className="text-slate-500 text-sm text-center mb-6">Why are you bypassing the QR scanner?</p>
+              
+              <div className="space-y-2 mb-6">
+                {overrideReasons.map(r => (
+                  <button
+                    key={r}
+                    onClick={() => setOverrideReason(r)}
+                    className={`w-full p-3 rounded-xl border text-sm font-semibold transition-all flex items-center justify-between ${overrideReason === r ? 'bg-orange-50 border-orange-400 text-orange-800' : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300'}`}
+                  >
+                    {r}
+                    {overrideReason === r && <span className="material-symbols-outlined text-orange-500 text-sm">check_circle</span>}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setManualOverrideDrop(null); setOverrideReason(''); }}
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (overrideReason) {
+                      handlePickUp(manualOverrideDrop.subscriberId);
+                      setManualOverrideDrop(null);
+                      setOverrideReason('');
+                    }
+                  }}
+                  disabled={!overrideReason}
+                  className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-orange-500 text-white font-bold rounded-xl transition-colors"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      </div>
     </div>
   );
 }

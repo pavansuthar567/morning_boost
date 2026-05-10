@@ -156,7 +156,9 @@ interface AppStore {
   // Driver
   driverRun: any | null;
   fetchDriverRun: () => Promise<void>;
-  markDropDelivered: (runId: string, subscriberId: string) => Promise<void>;
+  markDropDelivered: (runId: string, subscriberId: string, overrideReason?: string) => Promise<void>;
+  markDropPickedUp: (subscriberId: string) => void;
+  startDeliveryRun: (runId: string) => Promise<void>;
 
   // Testimonials
   testimonials: {
@@ -199,7 +201,7 @@ interface AppStore {
 
   isAuthenticated: boolean;
   // Dev
-  bypassLogin: (role?: 'user' | 'admin') => void;
+  bypassLogin: (role?: 'user' | 'admin' | 'delivery') => void;
 
   // Configuration & Constants
   config: {
@@ -282,31 +284,31 @@ const useStore = create<AppStore>()(
         {
           _id: 'DR-001',
           date: new Date().toISOString(),
-          status: 'in_progress',
+          status: 'pending',
           drops: [
-            { subscriberId: 'SUB-001', subscriberName: 'Sarah Jenkins', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sarah+Jenkins', phone: '9900112233', society: 'Sun City Row House', flatNo: 'B-12', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Mild allergy to raw ginger. Use less ginger.' },
-            { subscriberId: 'SUB-006', subscriberName: 'Aarav Sharma', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Aarav+Sharma', phone: '9900112244', society: 'Sun City Row House', flatNo: 'A-03', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-007', subscriberName: 'Neha Gupta', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Neha+Gupta', phone: '9900112255', society: 'Madhav Villa', flatNo: 'B-08', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'No apple. Substitute with cucumber.' },
-            { subscriberId: 'SUB-008', subscriberName: 'Rohit Verma', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Rohit+Verma', phone: '9900112266', society: 'Madhav Villa', flatNo: 'C-05', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-009', subscriberName: 'Ananya Iyer', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ananya+Iyer', phone: '9900112277', society: 'Sun City Row House', flatNo: 'D-02', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:15 AM' },
-            { subscriberId: 'SUB-010', subscriberName: 'Kavya Nair', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Kavya+Nair', phone: '9900112288', society: 'Sun City Row House', flatNo: 'A-09', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:18 AM' },
-            { subscriberId: 'SUB-011', subscriberName: 'Vikram Joshi', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Vikram+Joshi', phone: '9900112299', society: 'Madhav Villa', flatNo: 'B-11', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-012', subscriberName: 'Meera Reddy', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Meera+Reddy', phone: '9900112300', society: 'Sun City Row House', flatNo: 'C-07', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Extra lemon please.' },
-            { subscriberId: 'SUB-004', subscriberName: 'Sofia Miller', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sofia+Miller', phone: '9123456780', society: 'Sun City Row House', flatNo: 'D-11', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Citrus Glow', status: 'delivered', deliveredAt: '7:24 AM' },
-            { subscriberId: 'SUB-013', subscriberName: 'Arjun Mehta', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Arjun+Mehta', phone: '9900112311', society: 'Madhav Villa', flatNo: 'A-06', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-014', subscriberName: 'Divya Kapoor', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Divya+Kapoor', phone: '9900112322', society: 'Sun City Row House', flatNo: 'B-15', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Skip cayenne pepper. Stomach sensitive.' },
-            { subscriberId: 'SUB-015', subscriberName: 'Ravi Patel', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ravi+Patel', phone: '9900112333', society: 'Madhav Villa', flatNo: 'D-03', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-016', subscriberName: 'Ishita Das', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ishita+Das', phone: '9900112344', society: 'Sun City Row House', flatNo: 'C-10', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-017', subscriberName: 'Siddharth Rao', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Siddharth+Rao', phone: '9900112355', society: 'Madhav Villa', flatNo: 'A-14', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-002', subscriberName: 'Marcus Chen', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Marcus+Chen', phone: '9988776655', society: 'Madhav Villa', flatNo: 'A-04', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: 'Beet Rooted', status: 'delivered', deliveredAt: '7:05 AM', notes: 'Leave at the door.' },
-            { subscriberId: 'SUB-018', subscriberName: 'Tanvi Singh', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Tanvi+Singh', phone: '9900112366', society: 'Sun City Row House', flatNo: 'B-06', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-019', subscriberName: 'Karan Malhotra', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Karan+Malhotra', phone: '9900112377', society: 'Madhav Villa', flatNo: 'D-09', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Allergic to mint. Skip mint completely.' },
-            { subscriberId: 'SUB-020', subscriberName: 'Pooja Saxena', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Pooja+Saxena', phone: '9900112388', society: 'Sun City Row House', flatNo: 'A-12', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-021', subscriberName: 'Aditya Kumar', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Aditya+Kumar', phone: '9900112399', society: 'Sun City Row House', flatNo: 'C-14', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-022', subscriberName: 'Sneha Tiwari', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sneha+Tiwari', phone: '9900112400', society: 'Madhav Villa', flatNo: 'B-03', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-023', subscriberName: 'Manish Agarwal', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Manish+Agarwal', phone: '9900112411', society: 'Sun City Row House', flatNo: 'D-07', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null },
-            { subscriberId: 'SUB-024', subscriberName: 'Ritika Bhatt', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ritika+Bhatt', phone: '9900112422', society: 'Madhav Villa', flatNo: 'A-10', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Double turmeric. She takes it for joint pain.' },
-            { subscriberId: 'SUB-005', subscriberName: 'Priya Patel', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Priya+Patel', phone: '9876543210', society: 'Madhav Villa', flatNo: 'C-01', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'skipped', deliveredAt: null, notes: 'Insufficient Balance. Skipped.' },
+            { subscriberId: 'SUB-001', subscriberName: 'Sarah Jenkins', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sarah+Jenkins', phone: '9900112233', society: 'Sun City Row House', flatNo: 'B-12', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:05 AM', notes: 'Mild allergy to raw ginger. Use less ginger.', dropToken: 'GV-0001', dropIndex: 1, manualOverrideReason: null },
+            { subscriberId: 'SUB-006', subscriberName: 'Aarav Sharma', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Aarav+Sharma', phone: '9900112244', society: 'Sun City Row House', flatNo: 'A-03', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:09 AM', dropToken: 'GV-0002', dropIndex: 2, manualOverrideReason: 'QR Code Damaged' },
+            { subscriberId: 'SUB-007', subscriberName: 'Neha Gupta', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Neha+Gupta', phone: '9900112255', society: 'Madhav Villa', flatNo: 'B-08', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:18 AM', notes: 'No apple. Substitute with cucumber.', dropToken: 'GV-0003', dropIndex: 3, manualOverrideReason: null },
+            { subscriberId: 'SUB-008', subscriberName: 'Rohit Verma', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Rohit+Verma', phone: '9900112266', society: 'Madhav Villa', flatNo: 'C-05', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:22 AM', dropToken: 'GV-0004', dropIndex: 4, manualOverrideReason: null },
+            { subscriberId: 'SUB-009', subscriberName: 'Ananya Iyer', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ananya+Iyer', phone: '9900112277', society: 'Sun City Row House', flatNo: 'D-02', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:28 AM', dropToken: 'GV-0005', dropIndex: 5, manualOverrideReason: 'Label Missing / Torn' },
+            { subscriberId: 'SUB-010', subscriberName: 'Kavya Nair', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Kavya+Nair', phone: '9900112288', society: 'Sun City Row House', flatNo: 'A-09', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'GV-0006', dropIndex: 6, manualOverrideReason: null },
+            { subscriberId: 'SUB-011', subscriberName: 'Vikram Joshi', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Vikram+Joshi', phone: '9900112299', society: 'Madhav Villa', flatNo: 'B-11', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'GV-0007', dropIndex: 7, manualOverrideReason: null },
+            { subscriberId: 'SUB-012', subscriberName: 'Meera Reddy', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Meera+Reddy', phone: '9900112300', society: 'Sun City Row House', flatNo: 'C-07', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: 'Green Vitality', status: 'delivered', deliveredAt: '7:35 AM', notes: 'Extra lemon please.', dropToken: 'GV-0008', dropIndex: 8, manualOverrideReason: 'QR Code Damaged' },
+            { subscriberId: 'SUB-004', subscriberName: 'Sofia Miller', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sofia+Miller', phone: '9123456780', society: 'Sun City Row House', flatNo: 'D-11', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: 'Citrus Glow', status: 'delivered', deliveredAt: '7:40 AM', dropToken: 'CG-0001', dropIndex: 9, manualOverrideReason: null },
+            { subscriberId: 'SUB-013', subscriberName: 'Arjun Mehta', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Arjun+Mehta', phone: '9900112311', society: 'Madhav Villa', flatNo: 'A-06', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'CG-0002', dropIndex: 10, manualOverrideReason: null },
+            { subscriberId: 'SUB-014', subscriberName: 'Divya Kapoor', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Divya+Kapoor', phone: '9900112322', society: 'Sun City Row House', flatNo: 'B-15', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Skip cayenne pepper. Stomach sensitive.', dropToken: 'CG-0003', dropIndex: 11, manualOverrideReason: null },
+            { subscriberId: 'SUB-015', subscriberName: 'Ravi Patel', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ravi+Patel', phone: '9900112333', society: 'Madhav Villa', flatNo: 'D-03', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'CG-0004', dropIndex: 12, manualOverrideReason: null },
+            { subscriberId: 'SUB-016', subscriberName: 'Ishita Das', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ishita+Das', phone: '9900112344', society: 'Sun City Row House', flatNo: 'C-10', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'CG-0005', dropIndex: 13, manualOverrideReason: null },
+            { subscriberId: 'SUB-017', subscriberName: 'Siddharth Rao', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Siddharth+Rao', phone: '9900112355', society: 'Madhav Villa', flatNo: 'A-14', area: 'Dindoli', scheduledJuice: 'Citrus Glow', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'CG-0006', dropIndex: 14, manualOverrideReason: null },
+            { subscriberId: 'SUB-002', subscriberName: 'Marcus Chen', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Marcus+Chen', phone: '9988776655', society: 'Madhav Villa', flatNo: 'A-04', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Leave at the door.', dropToken: 'BR-0001', dropIndex: 15, manualOverrideReason: null },
+            { subscriberId: 'SUB-018', subscriberName: 'Tanvi Singh', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Tanvi+Singh', phone: '9900112366', society: 'Sun City Row House', flatNo: 'B-06', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'BR-0002', dropIndex: 16, manualOverrideReason: null },
+            { subscriberId: 'SUB-019', subscriberName: 'Karan Malhotra', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Karan+Malhotra', phone: '9900112377', society: 'Madhav Villa', flatNo: 'D-09', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Allergic to mint. Skip mint completely.', dropToken: 'BR-0003', dropIndex: 17, manualOverrideReason: null },
+            { subscriberId: 'SUB-020', subscriberName: 'Pooja Saxena', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Pooja+Saxena', phone: '9900112388', society: 'Sun City Row House', flatNo: 'A-12', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'BR-0004', dropIndex: 18, manualOverrideReason: null },
+            { subscriberId: 'SUB-021', subscriberName: 'Aditya Kumar', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Aditya+Kumar', phone: '9900112399', society: 'Sun City Row House', flatNo: 'C-14', area: 'Dindoli', scheduledJuice: 'Beet Rooted', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'BR-0005', dropIndex: 19, manualOverrideReason: null },
+            { subscriberId: 'SUB-022', subscriberName: 'Sneha Tiwari', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sneha+Tiwari', phone: '9900112400', society: 'Madhav Villa', flatNo: 'B-03', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'TS-0001', dropIndex: 20, manualOverrideReason: null },
+            { subscriberId: 'SUB-023', subscriberName: 'Manish Agarwal', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Manish+Agarwal', phone: '9900112411', society: 'Sun City Row House', flatNo: 'D-07', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null, dropToken: 'TS-0002', dropIndex: 21, manualOverrideReason: null },
+            { subscriberId: 'SUB-024', subscriberName: 'Ritika Bhatt', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Ritika+Bhatt', phone: '9900112422', society: 'Madhav Villa', flatNo: 'A-10', area: 'Dindoli', scheduledJuice: 'Tropical Sunrise', deliveredJuice: null, status: 'pending', deliveredAt: null, notes: 'Double turmeric. She takes it for joint pain.', dropToken: 'TS-0003', dropIndex: 22, manualOverrideReason: null },
+            { subscriberId: 'SUB-005', subscriberName: 'Priya Patel', avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Priya+Patel', phone: '9876543210', society: 'Madhav Villa', flatNo: 'C-01', area: 'Dindoli', scheduledJuice: 'Green Vitality', deliveredJuice: null, status: 'skipped', deliveredAt: null, notes: 'Insufficient Balance. Skipped.', dropToken: 'GV-0009', dropIndex: 23, manualOverrideReason: null },
           ],
           createdBy: 'admin'
         }
@@ -1065,16 +1067,21 @@ const useStore = create<AppStore>()(
         }
       },
 
-      markDropDelivered: async (runId: string, subscriberId: string) => {
+      markDropDelivered: async (runId: string, subscriberId: string, overrideReason?: string) => {
         const { token, isLiveMode } = get();
         if (!isLiveMode) {
-          // Demo mode: optimistically update the mock run
+          // Demo mode: optimistically update the mock run, store reason too
           set((state) => ({
             driverRun: state.driverRun ? {
               ...state.driverRun,
               drops: state.driverRun.drops.map((d: any) =>
                 d.subscriberId === subscriberId
-                  ? { ...d, status: 'delivered', deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) }
+                  ? {
+                      ...d,
+                      status: 'delivered',
+                      deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                      manualOverrideReason: overrideReason || null,
+                    }
                   : d
               )
             } : null
@@ -1086,7 +1093,7 @@ const useStore = create<AppStore>()(
           const res = await fetch(`${API_URL}/driver/drops/${subscriberId}/deliver`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ runId }),
+            body: JSON.stringify({ runId, overrideReason: overrideReason || null }),
           });
           const data = await res.json();
           if (data.success) {
@@ -1095,8 +1102,13 @@ const useStore = create<AppStore>()(
               driverRun: state.driverRun ? {
                 ...state.driverRun,
                 drops: state.driverRun.drops.map((d: any) =>
-                  d.subscriberId === subscriberId
-                    ? { ...d, status: 'delivered', deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) }
+                  String(d.subscriberId) === String(subscriberId)
+                    ? {
+                        ...d,
+                        status: 'delivered',
+                        deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                        manualOverrideReason: overrideReason || null,
+                      }
                     : d
                 )
               } : null
@@ -1104,6 +1116,43 @@ const useStore = create<AppStore>()(
           }
         } catch (e) {
           console.error("Mark delivered failed", e);
+        }
+      },
+
+      markDropPickedUp: (subscriberId: string) => {
+        // Always optimistic — pick-up is a local gesture, synced on startDeliveryRun
+        set((state) => ({
+          driverRun: state.driverRun ? {
+            ...state.driverRun,
+            drops: state.driverRun.drops.map((d: any) =>
+              String(d.subscriberId) === String(subscriberId)
+                ? { ...d, status: 'picked_up' }
+                : d
+            )
+          } : null
+        }));
+      },
+
+      startDeliveryRun: async (runId: string) => {
+        const { token, isLiveMode } = get();
+        // Batch-update all picked_up → out_for_delivery
+        set((state) => ({
+          driverRun: state.driverRun ? {
+            ...state.driverRun,
+            status: 'out_for_delivery',
+            drops: state.driverRun.drops.map((d: any) =>
+              d.status === 'picked_up' ? { ...d, status: 'out_for_delivery' } : d
+            )
+          } : null
+        }));
+        if (!isLiveMode || !token) return;
+        try {
+          await fetch(`${API_URL}/driver/runs/${runId}/start`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          });
+        } catch (e) {
+          console.error("Start run failed", e);
         }
       },
 
@@ -1238,10 +1287,11 @@ const useStore = create<AppStore>()(
         }
       },
 
-      bypassLogin: (role: 'user' | 'admin' = 'admin') => {
+      bypassLogin: (role: 'user' | 'admin' | 'delivery' = 'admin') => {
+        const names = { admin: 'Dev Admin', user: 'Dev User', delivery: 'Rajesh Kumar (Driver)' };
         const mockUser = {
-          _id: 'mock_id_123',
-          name: 'Dev Admin',
+          _id: `mock_id_${role}`,
+          name: names[role],
           phone: '9999999999',
           role: role,
           isActive: true,

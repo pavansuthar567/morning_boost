@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import useStore from '@/store/useStore';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function AdminKitchenPage() {
   const { token, isLiveMode, adminData, mockDeliveryRuns } = useStore();
@@ -232,31 +234,55 @@ export default function AdminKitchenPage() {
     ];
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) return;
-    const labelsHtml = labelsToPrint.map((d: any) => {
+    const labelsHtml = labelsToPrint.map((d: any, idx: number) => {
       const hasNote = d.notes && !d.notes.toLowerCase().includes('insufficient balance');
-      const slogan = slogans[Math.floor(Math.random() * slogans.length)];
+      const slogan = slogans[idx % slogans.length];
+      const token = d.dropToken || `${selectedJuiceName?.split(' ').map((w: string) => w[0]).join('')}-${String(idx + 1).padStart(4, '0')}`;
+      
+      // Offline robust QR code rendering
+      let qrSvgString = renderToStaticMarkup(<QRCodeSVG value={token} size={36} />);
+      // Fix missing xmlns for data URI rendering in browsers
+      if (!qrSvgString.includes('xmlns=')) {
+        qrSvgString = qrSvgString.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+      }
+      // Convert to data URI
+      const qrDataUri = `data:image/svg+xml;utf8,${encodeURIComponent(qrSvgString)}`;
+
       return `
-        <div style="border:1.5px solid #000;padding:6px 10px;margin:4px;width:144px;height:108px;font-family:Arial,sans-serif;page-break-inside:avoid;border-radius:6px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;">
-          <div style="font-size:8px;font-weight:900;letter-spacing:0.5px;margin-bottom:3px;">🧃 MORNING BOOST</div>
-          <div style="font-size:11px;font-weight:900;line-height:1.2;">${d.subscriberName}</div>
-          <div style="font-size:9px;color:#444;margin:2px 0 4px;">${d.flatNo} • ${d.society}</div>
-          <div style="font-size:10px;font-weight:700;border-top:1px solid #000;padding-top:4px;">${d.scheduledJuice}</div>
-          ${hasNote ? `<div style="font-size:8px;margin-top:3px;border-top:1px dashed #000;padding-top:3px;line-height:1.2;">&#9888; ${d.notes}</div>` : ''}
-          <div style="margin-top:auto;font-size:7px;font-style:italic;color:#555;text-align:center;padding-top:3px;">${slogan}</div>
+        <div style="border:1px solid #000;padding:8px 10px;width:5.5cm;height:4.2cm;font-family:Arial,sans-serif;page-break-inside:avoid;border-radius:6px;box-sizing:border-box;display:flex;flex-direction:column;gap:3px;position:relative;">
+          <div style="font-size:7px;font-weight:900;letter-spacing:0.5px;color:#555;">🧃 MORNING BOOST</div>
+          <div style="font-size:12px;font-weight:900;line-height:1.1;margin-top:2px;">${d.subscriberName}</div>
+          <div style="font-size:9px;color:#222;line-height:1.2;">${d.flatNo} • ${d.society}</div>
+          <div style="font-size:10px;font-weight:800;border-top:1px solid #000;padding-top:4px;margin-top:2px;">${d.scheduledJuice}</div>
+          ${hasNote 
+            ? `<div style="font-size:8px;border-top:1px dashed #666;padding-top:3px;margin-top:2px;line-height:1.2;font-weight:600;color:#b45309;">&#9888; ${d.notes}</div>` 
+            : `<div style="font-size:8px;border-top:1px dashed #ccc;padding-top:3px;margin-top:2px;line-height:1.2;font-style:italic;color:#999;">Standard Preparation</div>`
+          }
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:auto;border-top:1px solid #eee;padding-top:4px;">
+            <div style="font-size:10px;font-weight:900;font-family:monospace;letter-spacing:1px;margin-bottom:2px;">${token}</div>
+            <img src="${qrDataUri}" width="36" height="36" style="display:block;" alt="QR" />
+          </div>
+          <div style="font-size:7px;font-style:italic;color:#666;text-align:center;position:absolute;bottom:4px;left:0;right:0;">${slogan}</div>
         </div>
       `;
     }).join('');
+    
     printWindow.document.write(`
+      <!DOCTYPE html>
       <html><head><title>Labels - ${selectedJuiceName}</title>
-      <style>@media print{body{margin:0}@page{margin:5mm;}}</style></head>
-      <body style="display:flex;flex-wrap:wrap;padding:4px;">
+      <style>
+        @page { size: A4; margin: 10mm; }
+        body { margin: 0; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 5mm; background: white; }
+      </style></head>
+      <body>
         ${labelsHtml}
       </body></html>
     `);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
+    setTimeout(() => printWindow.print(), 200); 
   };
+
 
   if (isLoading) {
     return (

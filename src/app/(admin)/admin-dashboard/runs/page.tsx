@@ -119,10 +119,10 @@ export default function AdminRunsPage() {
 
   // Group drops by society
   const allDrops = deliveryRun?.drops || [];
-  
+
   // Apply Area Filter
   const drops = areaFilter === 'All' ? allDrops : allDrops.filter((d: any) => d.area === areaFilter);
-  
+
   const groupedBySociety: Record<string, any[]> = {};
   drops.forEach((drop: any, idx: number) => {
     const key = drop.society || 'Unknown';
@@ -303,23 +303,178 @@ export default function AdminRunsPage() {
             </p>
           </div>
 
+          {/* ---- Driver Analytics ---- */}
+          {(() => {
+            const allD = deliveryRun?.drops || [];
+            const delivered = allD.filter((d: any) => d.status === 'delivered' || d.status === 'substituted');
+            const manualDrops = delivered.filter((d: any) => !!d.manualOverrideReason);
+            const qrDrops = delivered.filter((d: any) => !d.manualOverrideReason);
+            const qrRate = delivered.length > 0 ? Math.round((qrDrops.length / delivered.length) * 100) : 0;
+            const manualRate = 100 - qrRate;
+
+            // Override reason breakdown
+            const reasonMap: Record<string, number> = {};
+            manualDrops.forEach((d: any) => {
+              const r = d.manualOverrideReason || 'Unknown';
+              reasonMap[r] = (reasonMap[r] || 0) + 1;
+            });
+            const reasonEntries = Object.entries(reasonMap).sort((a, b) => b[1] - a[1]);
+
+            // Delivery speed (first → last deliveredAt among delivered drops)
+            const deliveredWithTime = delivered.filter((d: any) => d.deliveredAt);
+            let avgDeliveryMins = 0;
+            let runDurationLabel = '—';
+            if (deliveredWithTime.length >= 2) {
+              const times = deliveredWithTime.map((d: any) => parseTime(d.deliveredAt)).sort((a: number, b: number) => a - b);
+              const duration = times[times.length - 1] - times[0];
+              avgDeliveryMins = delivered.length > 1 ? Math.round(duration / (delivered.length - 1)) : 0;
+              runDurationLabel = `${duration} min`;
+            }
+
+            // Subscribers who needed manual override (for label reprint targeting)
+            const manualSubscribers = manualDrops.map((d: any) => ({
+              name: d.subscriberName,
+              reason: d.manualOverrideReason,
+              token: d.dropToken,
+            }));
+
+            const completionRate = allD.length > 0 ? Math.round((delivered.length / allD.filter((d: any) => d.status !== 'skipped').length || 1) * 100) : 0;
+
+            return (
+              <div className="mb-8 space-y-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="material-symbols-outlined text-primary">analytics</span>
+                  <h2 className="font-headline font-bold text-lg text-slate-800">Driver Analytics</h2>
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Today</span>
+                </div>
+
+                {/* Row 1: KPI tiles */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* QR Compliance */}
+                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">QR Compliance</p>
+                    <div className="flex items-end gap-1">
+                      <p className={`text-2xl font-headline font-black ${qrRate >= 80 ? 'text-green-600' : qrRate >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>{qrRate}%</p>
+                    </div>
+                    <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-700 ${qrRate >= 80 ? 'bg-green-500' : qrRate >= 50 ? 'bg-amber-400' : 'bg-rose-400'}`} style={{ width: `${qrRate}%` }} />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1.5">{qrDrops.length} scanned · {manualDrops.length} manual</p>
+                  </div>
+
+                  {/* Completion Rate */}
+                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Completion Rate</p>
+                    <p className={`text-2xl font-headline font-black ${completionRate === 100 ? 'text-green-600' : 'text-slate-800'}`}>{completionRate}%</p>
+                    <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full" style={{ width: `${completionRate}%` }} />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1.5">{delivered.length} of {allD.filter((d: any) => d.status !== 'skipped').length} active drops</p>
+                  </div>
+
+                  {/* Run Duration */}
+                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Run Duration</p>
+                    <p className="text-2xl font-headline font-black text-slate-800">{runDurationLabel}</p>
+                    {avgDeliveryMins > 0 && <p className="text-[10px] text-slate-400 mt-1.5">~{avgDeliveryMins} min/drop avg</p>}
+                  </div>
+
+                  {/* Manual Overrides */}
+                  <div className={`rounded-2xl border p-5 shadow-sm ${manualDrops.length > 0 ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-100'}`}>
+                    <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${manualDrops.length > 0 ? 'text-amber-600' : 'text-slate-400'}`}>Manual Overrides</p>
+                    <p className={`text-2xl font-headline font-black ${manualDrops.length > 0 ? 'text-amber-700' : 'text-slate-800'}`}>{manualDrops.length}</p>
+                    <p className="text-[10px] text-slate-400 mt-1.5">{manualRate}% of deliveries</p>
+                  </div>
+                </div>
+
+                {/* Row 2: Reason breakdown + Subscribers needing label reprint */}
+                {(reasonEntries.length > 0 || manualSubscribers.length > 0) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Override Reason Breakdown */}
+                    {reasonEntries.length > 0 && (
+                      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-amber-500 text-lg">warning</span>
+                          <h3 className="font-bold text-sm text-slate-800">Override Reason Breakdown</h3>
+                        </div>
+                        <div className="p-4 space-y-3">
+                          {reasonEntries.map(([reason, count]) => {
+                            const pct = manualDrops.length > 0 ? Math.round((count / manualDrops.length) * 100) : 0;
+                            return (
+                              <div key={reason}>
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-xs font-semibold text-slate-700">{reason}</span>
+                                  <span className="text-xs font-black text-slate-500">{count}×</span>
+                                </div>
+                                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Subscribers Who Needed Manual Override (label reprint targets) */}
+                    {manualSubscribers.length > 0 && (
+                      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-rose-400 text-lg">qr_code</span>
+                          <h3 className="font-bold text-sm text-slate-800">Label Reprint Queue</h3>
+                          <span className="ml-auto text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full">QR Failed</span>
+                        </div>
+                        <div className="divide-y divide-slate-50">
+                          {manualSubscribers.map((s: any, i: number) => (
+                            <div key={i} className="px-5 py-3 flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-bold text-slate-800">{s.name}</p>
+                                <p className="text-[11px] text-amber-600 font-medium">{s.reason}</p>
+                              </div>
+                              {s.token && (
+                                <span className="text-[10px] font-black uppercase tracking-widest border border-slate-200 px-2 py-1 rounded-md bg-slate-50 text-slate-500 shrink-0">#{s.token}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Empty state for analytics when no deliveries yet */}
+                {delivered.length === 0 && (
+                  <div className="bg-slate-50 rounded-2xl border border-slate-100 p-6 text-center">
+                    <span className="material-symbols-outlined text-3xl text-slate-300 mb-2">bar_chart</span>
+                    <p className="text-sm font-bold text-slate-400">Analytics will appear as drops are delivered.</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Grouped by Society */}
+          <div className="flex items-center gap-3 mb-4">
+            <span className="material-symbols-outlined text-slate-400">location_city</span>
+            <h2 className="font-headline font-bold text-lg text-slate-800">Drop Route</h2>
+            <span className="text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">By Society</span>
+          </div>
           <div className="space-y-6">
             {Object.entries(groupedBySociety).map(([society, societyDrops]) => {
               const societyDelivered = societyDrops.filter(d => d.status === 'delivered' || d.status === 'substituted').length;
-              
+
               // Calculate Time Metrics
               const deliveredDrops = societyDrops.filter(d => d.deliveredAt);
               let startLabel = '--:--';
               let endLabel = '--:--';
               let totalMins = 0;
-              
+
               if (deliveredDrops.length > 0) {
                 const times = deliveredDrops.map(d => ({
-                   raw: parseTime(d.deliveredAt),
-                   label: formatTimeFromDateStr(d.deliveredAt)
+                  raw: parseTime(d.deliveredAt),
+                  label: formatTimeFromDateStr(d.deliveredAt)
                 })).sort((a, b) => a.raw - b.raw);
-                
+
                 startLabel = times[0].label;
                 endLabel = times[times.length - 1].label;
                 totalMins = times[times.length - 1].raw - times[0].raw;
@@ -338,7 +493,7 @@ export default function AdminRunsPage() {
                           <h3 className="font-headline font-bold text-base text-slate-800">{society}</h3>
                           <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[10px] font-bold uppercase tracking-widest">{societyDrops[0]?.area || 'Dindoli'}</span>
                         </div>
-                        
+
                         {/* Time Metrics Row */}
                         <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
                           <div className="flex items-center gap-1">
@@ -358,7 +513,7 @@ export default function AdminRunsPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-6 w-full md:w-auto mt-4 md:mt-0">
                       <div className="flex flex-col">
                         <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Driver Assigned</label>
@@ -367,7 +522,7 @@ export default function AdminRunsPage() {
                           {/* Driver options will go here in the future */}
                         </select>
                       </div>
-                      
+
                       <div className="text-right shrink-0">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Progress</p>
                         <div className="text-lg font-headline font-black text-slate-800">
