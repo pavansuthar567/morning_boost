@@ -53,7 +53,7 @@ export default function DriverDashboard() {
     return Object.entries(groups).map(([name, items]) => ({ name, items }));
   }, [drops]);
 
-  const pickedUpCount = useMemo(() => activeDrops.filter(d => d.status === 'picked_up' || d.status === 'out_for_delivery' || d.status === 'delivered').length, [activeDrops]);
+  const pickedUpCount = useMemo(() => activeDrops.filter((d: any) => d.status === 'picked_up' || d.status === 'out_for_delivery' || d.status === 'delivered').length, [activeDrops]);
   const allPickedUp = activeDrops.length > 0 && pickedUpCount === activeDrops.length;
   
   const runStarted = useMemo(() => {
@@ -85,10 +85,14 @@ export default function DriverDashboard() {
   const handleMarkDelivered = async () => {
     if (!confirmDrop || !driverRun) return;
     setIsMarking(true);
-    await markDropDelivered(driverRun._id, confirmDrop.subscriberId);
+    // Pass override reason only for manual deliveries (QR was bypassed)
+    const reason = isManualDelivery && overrideReason ? overrideReason : undefined;
+    await markDropDelivered(driverRun._id, confirmDrop.subscriberId, reason);
     setIsMarking(false);
     setConfirmDrop(null);
     setScannedDrop(null);
+    setOverrideReason('');
+    setIsManualDelivery(false);
   };
 
   const handleStartRun = async () => {

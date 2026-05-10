@@ -15,6 +15,7 @@ export interface IDeliveryDrop {
   notes?: string;
   dropToken?: string;
   dropIndex?: number;
+  manualOverrideReason?: string; // Reason given when QR scan was bypassed
 }
 
 export interface IDeliveryRun extends Document {
@@ -40,7 +41,8 @@ const deliveryDropSchema = new Schema<IDeliveryDrop>({
   deliveredAt: { type: Date },
   notes: { type: String },
   dropToken: { type: String },
-  dropIndex: { type: Number }
+  dropIndex: { type: Number },
+  manualOverrideReason: { type: String, default: null },
 });
 
 const deliveryRunSchema = new Schema<IDeliveryRun>(
