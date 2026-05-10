@@ -10,9 +10,11 @@ export interface IDeliveryDrop {
   area: string;
   scheduledJuice: string;
   deliveredJuice?: string;
-  status: 'pending' | 'delivered' | 'skipped' | 'substituted';
+  status: 'pending' | 'picked_up' | 'out_for_delivery' | 'delivered' | 'skipped' | 'substituted';
   deliveredAt?: Date;
   notes?: string;
+  dropToken?: string;
+  dropIndex?: number;
 }
 
 export interface IDeliveryRun extends Document {
@@ -34,9 +36,11 @@ const deliveryDropSchema = new Schema<IDeliveryDrop>({
   area: { type: String, required: true },
   scheduledJuice: { type: String, required: true },
   deliveredJuice: { type: String },
-  status: { type: String, enum: ['pending', 'delivered', 'skipped', 'substituted'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'picked_up', 'out_for_delivery', 'delivered', 'skipped', 'substituted'], default: 'pending' },
   deliveredAt: { type: Date },
   notes: { type: String },
+  dropToken: { type: String },
+  dropIndex: { type: Number }
 });
 
 const deliveryRunSchema = new Schema<IDeliveryRun>(
