@@ -154,9 +154,9 @@ interface AppStore {
   fetchAdminData: (type: 'subscribers' | 'inventory' | 'orders' | 'stats' | 'procurement' | 'recipes' | 'overview') => Promise<void>;
 
   // Driver
-  driverOrders: Order[];
-  fetchDriverOrders: () => Promise<void>;
-  updateOrderStatus: (orderId: string, status: string) => Promise<void>;
+  driverRun: any | null;
+  fetchDriverRun: () => Promise<void>;
+  markDropDelivered: (runId: string, subscriberId: string) => Promise<void>;
 
   // Testimonials
   testimonials: {
@@ -1044,42 +1044,66 @@ const useStore = create<AppStore>()(
       },
 
       // ---- Driver Actions ----
-      driverOrders: [],
-      fetchDriverOrders: async () => {
-        const { token, user } = get();
-        if (!token || !user) return;
+      driverRun: null,
+
+      fetchDriverRun: async () => {
+        const { token, isLiveMode, mockDeliveryRuns } = get();
+        if (!isLiveMode) {
+          // Demo mode: use the first mock delivery run as today's run
+          set({ driverRun: mockDeliveryRuns[0] || null });
+          return;
+        }
+        if (!token) return;
         try {
-          const res = await fetch(`${API_URL}/orders/driver/runs`, {
+          const res = await fetch(`${API_URL}/driver/runs`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           const data = await res.json();
-          if (data.success) set({ driverOrders: data.orders });
+          if (data.success) set({ driverRun: data.run || null });
         } catch (e) {
-          console.error("Fetch driver orders failed", e);
+          console.error("Fetch driver run failed", e);
         }
       },
 
-      updateOrderStatus: async (orderId: string, status: string) => {
-        const { token } = get();
+      markDropDelivered: async (runId: string, subscriberId: string) => {
+        const { token, isLiveMode } = get();
+        if (!isLiveMode) {
+          // Demo mode: optimistically update the mock run
+          set((state) => ({
+            driverRun: state.driverRun ? {
+              ...state.driverRun,
+              drops: state.driverRun.drops.map((d: any) =>
+                d.subscriberId === subscriberId
+                  ? { ...d, status: 'delivered', deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) }
+                  : d
+              )
+            } : null
+          }));
+          return;
+        }
         if (!token) return;
         try {
-          const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+          const res = await fetch(`${API_URL}/driver/drops/${subscriberId}/deliver`, {
             method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({ status }),
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ runId }),
           });
           const data = await res.json();
           if (data.success) {
+            // Optimistically update the drop status
             set((state) => ({
-              driverOrders: state.driverOrders.map((o: Order) => o._id === orderId ? { ...o, status } : o),
-              orders: state.orders.map((o: Order) => o._id === orderId ? { ...o, status } : o)
+              driverRun: state.driverRun ? {
+                ...state.driverRun,
+                drops: state.driverRun.drops.map((d: any) =>
+                  d.subscriberId === subscriberId
+                    ? { ...d, status: 'delivered', deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) }
+                    : d
+                )
+              } : null
             }));
           }
         } catch (e) {
-          console.error("Update status failed", e);
+          console.error("Mark delivered failed", e);
         }
       },
 

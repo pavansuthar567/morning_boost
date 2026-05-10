@@ -167,7 +167,7 @@ export default function PurchasesPage() {
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-vibrant-orange text-white px-5 py-2.5 rounded-full font-headline font-bold text-xs shadow-lg shadow-primary/10 active:scale-95 transition-transform flex items-center gap-2"
+            className="bg-vibrant-orange text-white px-5 py-2.5 rounded-full font-headline font-bold text-xs shadow-lg shadow-primary/10 active:scale-95 transition-transform flex items-center gap-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-sm">receipt_long</span>
             Log Purchase
