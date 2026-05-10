@@ -21,10 +21,12 @@ export async function GET(req: NextRequest) {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Delivery role: see only their assigned run. Admin: see first run of the day.
+    // ----    For MVP/Go-Live with a single driver, we just fetch today's run.
+    // ---- Future: Add `query.driver = auth.userId;` when multi-driver assignment is built.
     const query: any = { date: { $gte: today, $lt: tomorrow } };
-    if (authUser.role === 'delivery') {
-      query.driver = auth.userId;
-    }
+    // if (authUser.role === 'delivery') {
+    //   query.driver = auth.userId;
+    // }
 
     const run = await DeliveryRun.findOne(query).lean();
 
