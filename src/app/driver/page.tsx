@@ -111,7 +111,6 @@ export default function DriverDashboard() {
   // QR Scanner Initialization
   useEffect(() => {
     if (!isScannerOpen) {
-      setScannedDrop(null);
       return;
     }
     
