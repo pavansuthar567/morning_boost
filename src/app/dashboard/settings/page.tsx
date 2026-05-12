@@ -242,10 +242,18 @@ export default function SettingsPage() {
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Area</label>
+                  <select required className="w-full h-12 bg-white border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-orange-600/20" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value, society: ''})}>
+                    <option value="">Select Area...</option>
+                    {config.areas.map((a: string) => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Society / Building</label>
-                  <select required className="w-full h-12 bg-white border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-orange-600/20" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})}>
-                    <option value="">Select Society...</option>
-                    {config.societies.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                  <select disabled={!newAddress.area} required className="w-full h-12 bg-white border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-orange-600/20 disabled:opacity-60" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})}>
+                    <option value="">{newAddress.area ? "Select Society..." : "Select Area first..."}</option>
+                    {newAddress.area && config.societiesByArea[newAddress.area]?.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                    {newAddress.area && <option value="Other">Other (Not Listed)</option>}
                   </select>
                 </div>
                 <div>
@@ -255,13 +263,6 @@ export default function SettingsPage() {
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Pincode</label>
                   <input required className="w-full h-12 bg-white border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-orange-600/20" value={newAddress.pincode} onChange={e => setNewAddress({...newAddress, pincode: e.target.value})} placeholder="395004" type="text" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Area</label>
-                  <select required className="w-full h-12 bg-white border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-orange-600/20" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})}>
-                    <option value="">Select Area...</option>
-                    {config.areas.map((a: string) => <option key={a} value={a}>{a}</option>)}
-                  </select>
                 </div>
               </div>
               <div className="flex items-center gap-2">

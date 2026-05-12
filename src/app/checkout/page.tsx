@@ -476,10 +476,18 @@ export default function Checkout() {
               <form onSubmit={handleAddAddress} className="p-8 space-y-6 text-on-surface">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Area / Area Landmark</label>
+                    <select required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value, society: ''})}>
+                      <option value="">Select Area...</option>
+                      {config.areas.map((a: string) => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Society / Building Name</label>
-                    <select required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})}>
-                      <option value="">Select Society...</option>
-                      {config.societies.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                    <select disabled={!newAddress.area} required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface disabled:opacity-60" value={newAddress.society} onChange={e => setNewAddress({...newAddress, society: e.target.value})}>
+                      <option value="">{newAddress.area ? "Select Society..." : "Select Area first..."}</option>
+                      {newAddress.area && config.societiesByArea[newAddress.area]?.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                      {newAddress.area && <option value="Other">Other (Not Listed)</option>}
                     </select>
                   </div>
                   <div>
@@ -489,13 +497,6 @@ export default function Checkout() {
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Pincode</label>
                     <input required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.pincode} onChange={e => setNewAddress({...newAddress, pincode: e.target.value})} placeholder="400001" type="text" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Area / Area Landmark</label>
-                    <select required className="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold focus:ring-2 focus:ring-orange-600/20 text-on-surface" value={newAddress.area} onChange={e => setNewAddress({...newAddress, area: e.target.value})}>
-                      <option value="">Select Area...</option>
-                      {config.areas.map((a: string) => <option key={a} value={a}>{a}</option>)}
-                    </select>
                   </div>
                 </div>
                 <button 

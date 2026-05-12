@@ -18,7 +18,7 @@ const ingredientSchema = new Schema<IIngredient>(
   {
     name: { type: String, required: true, unique: true },
     category: { type: String, enum: ['fruit', 'veg', 'misc'], required: true },
-    unit: { type: String, enum: ['kg', 'gm', 'pcs', 'ml'], required: true },
+    unit: { type: String, enum: ['kg', 'gm', 'pcs', 'ml', 'bunch'], required: true },
     marketPrice: { type: Number, default: 0 },
     qtyAvailable: { type: Number, default: 0 },
     lastPriceUpdate: { type: Date, default: Date.now },
