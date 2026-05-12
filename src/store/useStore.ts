@@ -5,6 +5,25 @@ import { walletService } from '@/services/walletService';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
+// ---------- Global 401 Interceptor ----------
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch;
+  window.fetch = async (...args) => {
+    const response = await originalFetch(...args);
+    if (response.status === 401) {
+      // Clear storage and Zustand state
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      useStore.getState().logout();
+      // Only redirect if not already on login
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return response;
+  };
+}
+
 // ---------- Types ----------
 export interface User {
   _id?: string;
@@ -140,6 +159,11 @@ interface AppStore {
   orders: any[];
   fetchOrders: () => Promise<void>;
 
+  // Surveys
+  surveys: any[];
+  fetchSurveys: () => Promise<void>;
+  submitSurvey: (data: any) => Promise<void>;
+
   // Admin Data
   adminData: {
     subscribers: any[];
@@ -208,7 +232,7 @@ interface AppStore {
     juiceOptions: string[];
     dietOptions: string[];
     areas: string[];
-    societies: string[];
+    societiesByArea: Record<string, string[]>;
   };
 
   // Demo Data (Mock)
@@ -218,6 +242,7 @@ interface AppStore {
   mockInventory: any[];
   mockPurchases: any[];
   mockDeliveryRuns: any[];
+  mockSurveys: any[];
 }
 
 const useStore = create<AppStore>()(
@@ -231,10 +256,29 @@ const useStore = create<AppStore>()(
 
       // ---- Config & Constants ----
       config: {
-        juiceOptions: ['Green Vitality', 'Citrus Glow', 'Beet Rooted'],
+        juiceOptions: ['Green Vitality Real', 'Citrus Glow Real', 'Beet Rooted Real', 'Liquid Gold Real', 'Ruby Cleanse Real', 'Alkaline Green Real'],
         dietOptions: ['Vegan', 'No Ginger', 'No Sugar', 'Keto', 'Gluten-Free', 'No Dairy'],
-        areas: ['Dindoli'],
-        societies: ['Sun City Row House', 'Madhav Villa', 'Millenium Park']
+        areas: ['Dindoli', 'Bhatar', 'Vesu', 'Althan'],
+        societiesByArea: {
+          'Dindoli': [
+            'Shree ram bungalows', 'Prayosha star', 'Ambika Park Society', 'Tirupati Society',
+            'Krishna Kunj Society', 'Sai Shiv Shakti Society', 'Prayosha Gold',
+            'Rajdeep Row House Society', 'Radhika Homes', 'Lake City', 'Royal Star Township',
+            'Mahadev Nagar', 'Ambika Heaven', 'Green Valley', 'Gruham Palace', 'Vraj Vihar Residency'
+          ],
+          'Bhatar': [
+            'Turning Point Appartment', 'Sargam Shopping Area Residences', 'Mangal Park Society',
+            'Ashirwad Palace', 'Uday Deep Tower', 'Madhuram Apartment'
+          ],
+          'Vesu': [
+            'Happy Elegance', 'Happy Excellencia', 'Jolly Residency',
+            'Green Valley', 'Sangini Evoq', 'Someshwara Enclave'
+          ],
+          'Althan': [
+            'Raghuvir Saffron', 'Swastik Park Society', 'Aashirwad Residency', 'Spring Valley', 'Fortuna',
+            'Rameshwaram Greens'
+          ]
+        }
       },
 
       // ---- Demo Data ----
@@ -312,6 +356,13 @@ const useStore = create<AppStore>()(
           ],
           createdBy: 'admin'
         }
+      ],
+
+      mockSurveys: [
+        { _id: 'sur_1', name: 'Rahul Sharma', phone: '9898989898', area: 'Dindoli', society: 'Prayosha star', interestedProducts: ['Green Vitality', 'Citrus Glow'], frequency: 'Every day', createdAt: new Date().toISOString() },
+        { _id: 'sur_2', name: 'Neha Gupta', phone: '9123456789', area: 'Dindoli', society: 'Lake City', interestedProducts: ['Beet Rooted'], frequency: '1-3 days a week', createdAt: new Date(Date.now() - 86400000).toISOString() },
+        { _id: 'sur_3', name: 'Amit Patel', phone: '9988776655', area: 'Bhatar', society: 'Bhatar Society', interestedProducts: ['Green Vitality', 'Beet Rooted'], frequency: '4-6 days a week', createdAt: new Date(Date.now() - 2 * 86400000).toISOString() },
+        { _id: 'sur_4', name: 'Priya Desai', phone: '9900112233', area: 'Vesu', society: 'Vesu Enclave', interestedProducts: ['Citrus Glow'], frequency: 'Every day', createdAt: new Date(Date.now() - 3 * 86400000).toISOString() },
       ],
 
       // ---- Testimonials Data ----
@@ -652,9 +703,9 @@ const useStore = create<AppStore>()(
           const mockSub: Subscription = {
             _id: `sub_mock_${Date.now()}`,
             schedule: schedule.map((s: any) => ({
-               dayOfWeek: s.dayOfWeek,
-               product: s.productId,
-               isPaused: false
+              dayOfWeek: s.dayOfWeek,
+              product: s.productId,
+              isPaused: false
             })),
             status: 'active',
             deliveryAddress: deliveryAddress,
@@ -691,9 +742,9 @@ const useStore = create<AppStore>()(
           const sub = get().subscription;
           if (sub && sub._id === subId) {
             const updatedSchedule = schedule.map((s: any) => ({
-               dayOfWeek: s.dayOfWeek,
-               product: s.productId,
-               isPaused: false
+              dayOfWeek: s.dayOfWeek,
+              product: s.productId,
+              isPaused: false
             }));
             set({ subscription: { ...sub, schedule: updatedSchedule } });
           }
@@ -832,6 +883,48 @@ const useStore = create<AppStore>()(
         }
       },
 
+      // ---- Surveys ----
+      surveys: [],
+
+      fetchSurveys: async () => {
+        if (!get().isLiveMode) {
+          set({ surveys: get().mockSurveys });
+          return;
+        }
+        const { token } = get();
+        if (!token) return;
+        try {
+          const res = await fetch(`${API_URL}/survey`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (data.success) {
+            set({ surveys: data.surveys });
+          }
+        } catch (e) {
+          console.error("Fetch surveys failed", e);
+        }
+      },
+
+      submitSurvey: async (payload) => {
+        if (!get().isLiveMode) {
+          const newSurvey = {
+            _id: `mock_sur_${Date.now()}`,
+            ...payload,
+            createdAt: new Date().toISOString()
+          };
+          set(state => ({ mockSurveys: [newSurvey, ...state.mockSurveys] }));
+          return;
+        }
+        const res = await fetch(`${API_URL}/survey`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+      },
+
       // ---- Admin Data ----
       adminData: {
         subscribers: [
@@ -850,77 +943,155 @@ const useStore = create<AppStore>()(
         ],
         inventory: [
           {
-            _id: 'prod_1', name: 'Green Vitality', price: 85, category: 'Immunity', isActive: true, stock: 142, stockLevel: 'ok',
-            description: 'A powerful blend of alkalizing greens and roots, designed to flush toxins and rebuild cellular strength.',
-            ingredients: ['Kale', 'Spinach', 'Green Apple', 'Lemon', 'Ginger'],
-            benefits: ['🌿 Anti-Inflammatory', '🛡️ Cellular Defense', '🧬 Gut Health'],
+            _id: 'prod_1', name: 'Green Vitality Real', price: 120, category: 'Immunity', isActive: true, stock: 142, stockLevel: 'ok',
+            description: 'A powerful blend of alkalizing greens and hydrating cucumber, designed to flush toxins and rebuild cellular strength.',
+            ingredients: ['Spinach', 'Celery', 'Cucumber', 'Green Apple', 'Lemon', 'Ginger'],
+            benefits: ['🌿 Anti-Inflammatory', '💧 Deep Hydration', '🧬 Gut Health'],
             detailedBenefits: [
-              { title: 'Anti-Inflammatory Power', description: 'Ginger and leafy greens work synergistically to reduce systemic inflammation and soothe digestion.' },
-              { title: 'Cellular Defense', description: 'High in Vitamin C from lemon and green apple, fortifying your immune system against daily stressors.' },
-              { title: 'Gut Health', description: 'Rich in soluble fiber which acts as a prebiotic, nourishing your microbiome for better nutrient absorption.' },
+              { title: 'Anti-Inflammatory Power', description: 'Ginger and celery work synergistically to reduce systemic inflammation and soothe digestion.' },
+              { title: 'Deep Hydration', description: 'High water content from cucumber flushes out cellular toxins and rehydrates your body naturally.' },
+              { title: 'Gut Health', description: 'Rich in soluble fiber from green apples which acts as a prebiotic, nourishing your microbiome.' },
             ],
             recipe: [
-              { ingredientId: 'ing_1', ingredientName: 'Kale', qtyPerBottle: 0.3, unit: 'kg' },
-              { ingredientId: 'ing_2', ingredientName: 'Spinach', qtyPerBottle: 0.2, unit: 'kg' },
-              { ingredientId: 'ing_3', ingredientName: 'Green Apple', qtyPerBottle: 0.25, unit: 'kg' },
-              { ingredientId: 'ing_4', ingredientName: 'Lemon', qtyPerBottle: 1, unit: 'pcs' },
-              { ingredientId: 'ing_5', ingredientName: 'Ginger', qtyPerBottle: 25, unit: 'gm' },
+              { ingredientId: 'ing_cucumber', ingredientName: 'Cucumber', qtyPerBottle: 0.15, unit: 'kg' },
+              { ingredientId: 'ing_apple_green', ingredientName: 'Green Apple', qtyPerBottle: 0.15, unit: 'kg' },
+              { ingredientId: 'ing_celery', ingredientName: 'Celery', qtyPerBottle: 0.10, unit: 'kg' },
+              { ingredientId: 'ing_spinach', ingredientName: 'Spinach', qtyPerBottle: 0.05, unit: 'kg' },
+              { ingredientId: 'ing_lemon', ingredientName: 'Lemon', qtyPerBottle: 0.5, unit: 'pcs' },
+              { ingredientId: 'ing_ginger', ingredientName: 'Ginger', qtyPerBottle: 10, unit: 'gm' },
             ],
             recipeInstructions: [
-              'Wash the kale and spinach thoroughly in cold water.',
-              'Juice the green apples and lemon first to extract base liquids.',
-              'Slowly process the leafy greens, followed by the ginger.',
-              'Strain to remove micro-fibers for a smooth texture.'
+              'Wash cucumber, celery, and spinach thoroughly in cold ozone water.',
+              'Pass cucumber and celery through the cold press first for liquid base.',
+              'Add green apples, followed by spinach leaves.',
+              'Finish by pressing lemon (peeled) and ginger root.',
+              'Double strain to remove micro-fibers for a smooth texture.'
             ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1QuAZLQgXCBHxy0BcEKhRglzerfWWC-1vPn7NXZciyOqV_MZgInCEWjivoDmzw_XLtny0YeXfJoFb7zrHBi3BTX-8QVbJRBdjeAPbKJnhIZLPQXlrJ4kUlrFihd_qCx4lbucJ6uXSk0tXYwFuQb2-gr_4zjfE1XZ-0Bf5AoVu12NBnleBwT9AbcdsNO2bzPcNzX8rEN4tdP6e14o9wZrdNAnKYZPERcoTEOnO32z3afdKSme0XJXKoEMDo-gB7Byc5EnnQIwmZwc',
           },
           {
-            _id: 'prod_2', name: 'Citrus Glow', price: 79, category: 'Energy', isActive: true, stock: 24, stockLevel: 'low',
-            description: 'A vibrant, metabolism-boosting citrus blend packed with vitamin C and anti-inflammatory turmeric.',
-            ingredients: ['Orange', 'Grapefruit', 'Turmeric', 'Cayenne'],
-            benefits: ['✨ Skin Radiance', '⚡ Natural Energy', '💊 High Vitamin C'],
+            _id: 'prod_2', name: 'Citrus Glow Real', price: 110, category: 'Energy', isActive: true, stock: 24, stockLevel: 'low',
+            description: 'A vibrant, metabolism-boosting citrus blend packed with vitamin C and anti-inflammatory turmeric activated by black pepper.',
+            ingredients: ['Orange', 'Carrot', 'Pineapple', 'Turmeric Root', 'Black Pepper'],
+            benefits: ['✨ Skin Radiance', '⚡ Natural Energy', '🛡️ Immunity Boost'],
             detailedBenefits: [
-              { title: 'Skin Radiance', description: 'Massive doses of Vitamin C promote collagen production, leading to glowing, elastic skin.' },
-              { title: 'Natural Energy', description: 'Natural sugars from citrus combined with the metabolic kick of cayenne provide sustained, clean energy.' },
-              { title: 'Immune Boost', description: 'Turmeric and grapefruit offer a dual-action defense mechanism against pathogens and free radicals.' },
+              { title: 'Skin Radiance', description: 'Massive doses of Vitamin C from oranges and pineapple promote collagen production, leading to glowing skin.' },
+              { title: 'Natural Energy', description: 'Beta-carotene from carrots provides sustained, clean energy without the sugar crash.' },
+              { title: 'Activated Immunity', description: 'Fresh turmeric root paired with a pinch of black pepper increases curcumin absorption by 2000%.' },
             ],
             recipe: [
-              { ingredientId: 'ing_6', ingredientName: 'Orange', qtyPerBottle: 0.5, unit: 'kg' },
-              { ingredientId: 'ing_7', ingredientName: 'Grapefruit', qtyPerBottle: 0.25, unit: 'kg' },
-              { ingredientId: 'ing_8', ingredientName: 'Turmeric', qtyPerBottle: 20, unit: 'gm' },
-              { ingredientId: 'ing_9', ingredientName: 'Cayenne', qtyPerBottle: 5, unit: 'gm' },
+              { ingredientId: 'ing_orange', ingredientName: 'Orange', qtyPerBottle: 0.20, unit: 'kg' },
+              { ingredientId: 'ing_carrot', ingredientName: 'Carrot', qtyPerBottle: 0.15, unit: 'kg' },
+              { ingredientId: 'ing_pineapple', ingredientName: 'Pineapple', qtyPerBottle: 0.1, unit: 'pcs' },
+              { ingredientId: 'ing_turmeric', ingredientName: 'Turmeric Root', qtyPerBottle: 15, unit: 'gm' },
+              { ingredientId: 'ing_black_pepper', ingredientName: 'Black Pepper', qtyPerBottle: 1, unit: 'gm' },
             ],
             recipeInstructions: [
-              'Peel all citrus fruits (Orange & Grapefruit), leaving minor pith for antioxidants.',
-              'Juice the citrus fruits to yield a vibrant base.',
-              'Whisk in turmeric powder and cayenne precisely to prevent clumping.',
-              'Bottle immediately to prevent Vitamin C oxidation.'
+              'Peel oranges and pineapple completely. Scrub carrots well.',
+              'Cold press carrots first, followed by the pineapple chunks.',
+              'Juice the oranges and fresh turmeric root.',
+              'Add a tiny pinch of finely ground black pepper directly into the mixing vat.',
+              'Stir gently and bottle immediately to prevent Vitamin C oxidation.'
             ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBbA9CAicGuI3_qnblBkoS5JUaLGJiLMkMgWW-UhG8AGeY2G4HAMMHz2LmIpvAX8BD2ZC0GqHCeI0iY5ostmkp69mQheBa86_T9N-QhcOXWjJfkZblGf7Xk0L3yIPlpqysdbQIXRcR3g6GPrg7JlWwAHm-wR9AoJOCCirdtxNpCLmHdH20oQ6n2njZ0YxCLDAk1_zkwHS5VKKAzyxxFvxwAfoqCPI5jgkulkKw6ePnVabZrU_A5T1CQ9jRnJXF0Dq27zR1n7e3oPdU',
           },
           {
-            _id: 'prod_3', name: 'Beet Rooted', price: 90, category: 'Detox', isActive: true, stock: 88, stockLevel: 'ok',
-            description: 'An earthy, stamina-building root blend that improves blood flow and delivers rapid hydration.',
-            ingredients: ['Beetroot', 'Blueberry', 'Apple', 'Mint'],
-            benefits: ['🩸 Iron Rich', '🏃‍♂️ Stamina Boost', '💧 Cellular Hydration'],
+            _id: 'prod_3', name: 'Beet Rooted Real', price: 130, category: 'Detox', isActive: true, stock: 88, stockLevel: 'ok',
+            description: 'An earthy, stamina-building root blend that improves blood flow, paired with hydrating watermelon and sweet pomegranate.',
+            ingredients: ['Beetroot', 'Pomegranate', 'Watermelon', 'Red Apple', 'Mint Leaves'],
+            benefits: ['🩸 Iron Rich', '🏃‍♂️ Stamina Boost', '❤️ Heart Health'],
             detailedBenefits: [
               { title: 'Iron Rich & Blood Flow', description: 'Beetroot is famous for increasing nitric oxide in the blood, relaxing blood vessels and improving circulation.' },
               { title: 'Stamina Boost', description: 'The unique natural nitrates provide a measurable increase in physical endurance and oxygen utilization.' },
-              { title: 'Antioxidant Load', description: 'Blueberries add a massive dose of anthocyanins, fighting oxidative stress and cellular aging.' },
+              { title: 'Heart Health', description: 'Pomegranate arils are loaded with punicalagins, extremely potent antioxidants that protect the heart.' },
             ],
             recipe: [
-              { ingredientId: 'ing_10', ingredientName: 'Beetroot', qtyPerBottle: 0.5, unit: 'kg' },
-              { ingredientId: 'ing_11', ingredientName: 'Blueberry', qtyPerBottle: 100, unit: 'gm' },
-              { ingredientId: 'ing_3', ingredientName: 'Apple', qtyPerBottle: 0.3, unit: 'kg' },
-              { ingredientId: 'ing_12', ingredientName: 'Mint', qtyPerBottle: 1, unit: 'bunch' },
+              { ingredientId: 'ing_watermelon', ingredientName: 'Watermelon', qtyPerBottle: 0.20, unit: 'kg' },
+              { ingredientId: 'ing_beetroot', ingredientName: 'Beetroot', qtyPerBottle: 0.15, unit: 'kg' },
+              { ingredientId: 'ing_apple_red', ingredientName: 'Red Apple', qtyPerBottle: 0.10, unit: 'kg' },
+              { ingredientId: 'ing_pomegranate', ingredientName: 'Pomegranate', qtyPerBottle: 0.05, unit: 'kg' },
+              { ingredientId: 'ing_mint', ingredientName: 'Mint Leaves', qtyPerBottle: 0.5, unit: 'bunch' },
             ],
             recipeInstructions: [
-              'Trim and vigorously scrub the beetroots to remove dirt.',
-              'Process apples and beetroots through the heavy press.',
-              'Crush the blueberries alongside the mint for infused flavor.',
-              'Mix well. Ensure deep red hue without separation.'
+              'Extract arils from pomegranate. Scrub beetroots rigorously.',
+              'Cold press the watermelon first to create a highly hydrating base liquid.',
+              'Process the red apples and beetroots through the heavy press.',
+              'Crush the pomegranate arils alongside the fresh mint for infused flavor.',
+              'Mix thoroughly. Ensure deep ruby red hue without separation.'
             ],
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIrfiBzFWaXV4otHis8tCw4zQvYiuhbSV-LBjN1kSlQTzUDlDFg4gW1vjSDrpxjNh_YAIgmwhL0skxCoTSyL5OFVN3as4AR_fFgJoWIHnBgC6WfJmRkgVGEnpBIfabjNRsPPVQ2qMrBM2dMcfJ_JsS2_kkT9FOQ_Kv8lAG6KcGMHgljGIoUuqyineCTxBz-1fX8JtkmvScLUQt9ha9RmprJbTCrMCZQpO8SvsRnT7dnU5Y_KAbefSPmtlhYqohE1lWjUmpnjvasf8',
+          },
+          {
+            _id: 'prod_4', name: 'Liquid Gold Real', price: 115, category: 'Immunity', isActive: true, stock: 45, stockLevel: 'ok',
+            description: 'A tropical, anti-inflammatory blend that soothes the stomach and boosts immunity.',
+            ingredients: ['Pineapple', 'Yellow Apple', 'Ginger', 'Lemon', 'Mint Leaves'],
+            benefits: ['🍍 Digestion Aid', '🛡️ Immunity Boost', '✨ Anti-Inflammatory'],
+            detailedBenefits: [
+              { title: 'Digestion Aid', description: 'Pineapple contains bromelain, a powerful enzyme that helps break down proteins and soothe the gut.' },
+              { title: 'Immunity Boost', description: 'Loaded with Vitamin C from lemon and yellow apples to ward off infections.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_pineapple', ingredientName: 'Pineapple', qtyPerBottle: 0.15, unit: 'pcs' },
+              { ingredientId: 'ing_apple_yellow', ingredientName: 'Yellow Apple', qtyPerBottle: 0.20, unit: 'kg' },
+              { ingredientId: 'ing_ginger', ingredientName: 'Ginger', qtyPerBottle: 15, unit: 'gm' },
+              { ingredientId: 'ing_lemon', ingredientName: 'Lemon', qtyPerBottle: 0.5, unit: 'pcs' },
+              { ingredientId: 'ing_mint', ingredientName: 'Mint Leaves', qtyPerBottle: 0.2, unit: 'bunch' },
+            ],
+            recipeInstructions: [
+              'Peel the pineapple and cut into small chunks.',
+              'Cold press the yellow apples and pineapple first.',
+              'Add the ginger root and peeled lemon.',
+              'Lightly crush mint leaves and stir into the final yield.'
+            ],
+            image: '/products/liquid_gold_glass.png',
+          },
+          {
+            _id: 'prod_5', name: 'Ruby Cleanse Real', price: 140, category: 'Detox', isActive: true, stock: 30, stockLevel: 'low',
+            description: 'A deep red antioxidant powerhouse that cleanses the blood and supports liver function.',
+            ingredients: ['Pomegranate', 'Beetroot', 'Carrot', 'Red Grape'],
+            benefits: ['🍷 Powerful Antioxidants', '🩸 Blood Purifier', '👀 Vision Health'],
+            detailedBenefits: [
+              { title: 'Powerful Antioxidants', description: 'Red grapes and pomegranate provide massive amounts of resveratrol and punicalagins.' },
+              { title: 'Vision Health', description: 'High in beta-carotene from carrots, essential for maintaining healthy eyes.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_pomegranate', ingredientName: 'Pomegranate', qtyPerBottle: 0.1, unit: 'kg' },
+              { ingredientId: 'ing_beetroot', ingredientName: 'Beetroot', qtyPerBottle: 0.1, unit: 'kg' },
+              { ingredientId: 'ing_carrot', ingredientName: 'Carrot', qtyPerBottle: 0.2, unit: 'kg' },
+              { ingredientId: 'ing_grape_red', ingredientName: 'Red Grape', qtyPerBottle: 0.15, unit: 'kg' },
+            ],
+            recipeInstructions: [
+              'Extract pomegranate arils. Wash grapes and carrots thoroughly.',
+              'Process grapes first, followed by the pomegranate arils.',
+              'Cold press the carrots and beetroot to yield the dense red base.',
+              'Mix well and double strain for a silky smooth finish.'
+            ],
+            image: '/products/ruby_cleanse_glass.png',
+          },
+          {
+            _id: 'prod_6', name: 'Alkaline Green Real', price: 125, category: 'Daily Core', isActive: true, stock: 95, stockLevel: 'ok',
+            description: 'The ultimate daily core green juice. Highly alkalizing, extremely low in natural sugars.',
+            ingredients: ['Kale', 'Cucumber', 'Celery', 'Parsley', 'Lemon', 'Green Apple'],
+            benefits: ['🥬 Highly Alkalizing', '⚖️ Low Sugar', '🦴 Bone Health'],
+            detailedBenefits: [
+              { title: 'Highly Alkalizing', description: 'Floods the body with chlorophyll, restoring a healthy alkaline pH balance.' },
+              { title: 'Bone Health', description: 'Kale is packed with Vitamin K, crucial for bone density and calcium absorption.' },
+            ],
+            recipe: [
+              { ingredientId: 'ing_kale', ingredientName: 'Kale', qtyPerBottle: 0.1, unit: 'kg' },
+              { ingredientId: 'ing_cucumber', ingredientName: 'Cucumber', qtyPerBottle: 0.15, unit: 'kg' },
+              { ingredientId: 'ing_celery', ingredientName: 'Celery', qtyPerBottle: 0.15, unit: 'kg' },
+              { ingredientId: 'ing_parsley', ingredientName: 'Parsley', qtyPerBottle: 0.5, unit: 'bunch' },
+              { ingredientId: 'ing_lemon', ingredientName: 'Lemon', qtyPerBottle: 1, unit: 'pcs' },
+              { ingredientId: 'ing_apple_green', ingredientName: 'Green Apple', qtyPerBottle: 0.05, unit: 'kg' },
+            ],
+            recipeInstructions: [
+              'Wash all greens rigorously in ozone water.',
+              'Cold press cucumber and celery for maximum liquid yield.',
+              'Slowly press kale, parsley, and green apple.',
+              'Finish with a whole peeled lemon to cut the earthiness.'
+            ],
+            image: '/products/alkaline_green_glass.png',
           },
         ],
         allOrders: [
@@ -952,18 +1123,26 @@ const useStore = create<AppStore>()(
           { _id: 'sup_4', name: 'Berry Best Farm', contactName: 'Cathy Berry', phone: '111-222-3333', isActive: true, materials: ['ing_11'] },
         ],
         rawMaterials: [
-          { _id: 'ing_1', name: 'Kale', unit: 'kg', marketPrice: 60, qtyAvailable: 2.5, minStockLevel: 1.5, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
-          { _id: 'ing_2', name: 'Spinach', unit: 'kg', marketPrice: 40, qtyAvailable: 1.0, minStockLevel: 2.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
-          { _id: 'ing_3', name: 'Green Apple', unit: 'kg', marketPrice: 120, qtyAvailable: 5.0, minStockLevel: 3.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
-          { _id: 'ing_4', name: 'Lemon', unit: 'pcs', marketPrice: 5, qtyAvailable: 50, minStockLevel: 30, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
-          { _id: 'ing_5', name: 'Ginger', unit: 'gm', marketPrice: 0.3, qtyAvailable: 500, minStockLevel: 200, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
-          { _id: 'ing_6', name: 'Orange', unit: 'kg', marketPrice: 80, qtyAvailable: 2.0, minStockLevel: 4.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
-          { _id: 'ing_7', name: 'Grapefruit', unit: 'kg', marketPrice: 150, qtyAvailable: 1.5, minStockLevel: 2.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
-          { _id: 'ing_8', name: 'Turmeric', unit: 'gm', marketPrice: 0.4, qtyAvailable: 1000, minStockLevel: 500, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
-          { _id: 'ing_9', name: 'Cayenne', unit: 'gm', marketPrice: 0.5, qtyAvailable: 800, minStockLevel: 300, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
-          { _id: 'ing_10', name: 'Beetroot', unit: 'kg', marketPrice: 40, qtyAvailable: 10.0, minStockLevel: 5.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
-          { _id: 'ing_11', name: 'Blueberry', unit: 'gm', marketPrice: 1.2, qtyAvailable: 200, minStockLevel: 500, supplier: { _id: 'sup_4', name: 'Berry Best Farm' }, isActive: true },
-          { _id: 'ing_12', name: 'Mint', unit: 'bunch', marketPrice: 10, qtyAvailable: 15, minStockLevel: 10, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true }
+          { _id: 'ing_spinach', name: 'Spinach', unit: 'kg', marketPrice: 40, qtyAvailable: 5.0, minStockLevel: 2.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_apple_green', name: 'Green Apple', unit: 'kg', marketPrice: 150, qtyAvailable: 10.0, minStockLevel: 5.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_celery', name: 'Celery', unit: 'kg', marketPrice: 120, qtyAvailable: 4.0, minStockLevel: 2.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_cucumber', name: 'Cucumber', unit: 'kg', marketPrice: 30, qtyAvailable: 15.0, minStockLevel: 5.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_lemon', name: 'Lemon', unit: 'pcs', marketPrice: 5, qtyAvailable: 100, minStockLevel: 30, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_ginger', name: 'Ginger', unit: 'gm', marketPrice: 0.2, qtyAvailable: 1000, minStockLevel: 300, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_orange', name: 'Orange', unit: 'kg', marketPrice: 80, qtyAvailable: 12.0, minStockLevel: 5.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_carrot', name: 'Carrot', unit: 'kg', marketPrice: 40, qtyAvailable: 20.0, minStockLevel: 10.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_pineapple', name: 'Pineapple', unit: 'pcs', marketPrice: 60, qtyAvailable: 20, minStockLevel: 10, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_turmeric', name: 'Turmeric Root', unit: 'gm', marketPrice: 0.3, qtyAvailable: 500, minStockLevel: 200, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_black_pepper', name: 'Black Pepper', unit: 'gm', marketPrice: 1.0, qtyAvailable: 200, minStockLevel: 50, supplier: { _id: 'sup_3', name: 'Spice Importers' }, isActive: true },
+          { _id: 'ing_beetroot', name: 'Beetroot', unit: 'kg', marketPrice: 50, qtyAvailable: 15.0, minStockLevel: 5.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_pomegranate', name: 'Pomegranate', unit: 'kg', marketPrice: 180, qtyAvailable: 8.0, minStockLevel: 3.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_apple_red', name: 'Red Apple', unit: 'kg', marketPrice: 140, qtyAvailable: 10.0, minStockLevel: 4.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_mint', name: 'Mint Leaves', unit: 'bunch', marketPrice: 10, qtyAvailable: 30, minStockLevel: 10, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_watermelon', name: 'Watermelon', unit: 'kg', marketPrice: 25, qtyAvailable: 30.0, minStockLevel: 10.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_apple_yellow', name: 'Yellow Apple', unit: 'kg', marketPrice: 130, qtyAvailable: 5.0, minStockLevel: 3.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_grape_red', name: 'Red Grape', unit: 'kg', marketPrice: 90, qtyAvailable: 10.0, minStockLevel: 2.0, supplier: { _id: 'sup_2', name: 'Orchard Farms' }, isActive: true },
+          { _id: 'ing_kale', name: 'Kale', unit: 'kg', marketPrice: 60, qtyAvailable: 6.0, minStockLevel: 2.0, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true },
+          { _id: 'ing_parsley', name: 'Parsley', unit: 'bunch', marketPrice: 15, qtyAvailable: 20, minStockLevel: 5, supplier: { _id: 'sup_1', name: 'Local Greens Co.' }, isActive: true }
         ],
         stats: {
           activeRhythms: 18,
@@ -1023,7 +1202,7 @@ const useStore = create<AppStore>()(
 
           if (data.success) {
             // Check again if live mode has changed while fetching
-            if(!get().isLiveMode) return;
+            if (!get().isLiveMode) return;
 
             set((state) => ({
               adminData: {
@@ -1077,11 +1256,11 @@ const useStore = create<AppStore>()(
               drops: state.driverRun.drops.map((d: any) =>
                 d.subscriberId === subscriberId
                   ? {
-                      ...d,
-                      status: 'delivered',
-                      deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-                      manualOverrideReason: overrideReason || null,
-                    }
+                    ...d,
+                    status: 'delivered',
+                    deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                    manualOverrideReason: overrideReason || null,
+                  }
                   : d
               )
             } : null
@@ -1104,11 +1283,11 @@ const useStore = create<AppStore>()(
                 drops: state.driverRun.drops.map((d: any) =>
                   String(d.subscriberId) === String(subscriberId)
                     ? {
-                        ...d,
-                        status: 'delivered',
-                        deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-                        manualOverrideReason: overrideReason || null,
-                      }
+                      ...d,
+                      status: 'delivered',
+                      deliveredAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                      manualOverrideReason: overrideReason || null,
+                    }
                     : d
                 )
               } : null
@@ -1168,6 +1347,9 @@ const useStore = create<AppStore>()(
           const data = await res.json();
           if (data.success) {
             set({ adminSettings: data.settings });
+            if (typeof data.settings.mockDataMode === 'boolean') {
+              set({ isLiveMode: !data.settings.mockDataMode });
+            }
           }
         } catch (e) {
           console.error("Fetch settings failed", e);
@@ -1188,6 +1370,9 @@ const useStore = create<AppStore>()(
           const data = await res.json();
           if (data.success) {
             set({ adminSettings: data.settings });
+            if (typeof data.settings.mockDataMode === 'boolean') {
+              set({ isLiveMode: !data.settings.mockDataMode });
+            }
           } else {
             throw new Error(data.error);
           }
@@ -1316,7 +1501,7 @@ const useStore = create<AppStore>()(
     }),
     {
       name: 'morning-juice-store',
-      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
+      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated, isLiveMode: state.isLiveMode }),
     }
   )
 );

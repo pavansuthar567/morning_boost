@@ -38,6 +38,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         { path: '/admin-dashboard/raw-materials', icon: 'grass', label: 'Raw Materials' },
         { path: '/admin-dashboard/purchases', icon: 'receipt_long', label: 'Purchase Invoices' },
         { path: '/admin-dashboard/suppliers', icon: 'storefront', label: 'Suppliers' },
+        { path: '/admin-dashboard/survey', icon: 'campaign', label: 'Demand Survey' },
         { path: '/admin-dashboard/settings', icon: 'settings', label: 'Global Settings' },
     ];
 
