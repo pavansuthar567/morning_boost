@@ -7,6 +7,8 @@ export interface IProduct extends Document {
   healthGoal?: string;
   image: string;
   description?: string;
+  servingSize?: number;
+  unit?: string;
   recipe?: mongoose.Types.ObjectId;
   benefits?: string[];
   detailedBenefits?: { title: string; description: string }[];
@@ -23,6 +25,8 @@ const productSchema = new Schema<IProduct>(
     healthGoal: { type: String, enum: ['Immunity', 'Energy', 'Detox', 'Daily Core', 'Wellness', 'Hydration'] },
     image: { type: String, required: true },
     description: { type: String },
+    servingSize: { type: Number, default: 300 },
+    unit: { type: String, enum: ['ml', 'gm', 'pcs', 'kg', 'l'], default: 'ml' },
     recipe: { type: Schema.Types.ObjectId, ref: 'Recipe' },
     benefits: [{ type: String }],
     detailedBenefits: [{
