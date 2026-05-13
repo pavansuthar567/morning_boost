@@ -179,9 +179,9 @@ export default function SurveyPage() {
                   {/* Info Icon */}
                   <button
                     onClick={(e) => { e.stopPropagation(); setDetailProduct(product); }}
-                    className="absolute top-3 left-3 w-6 h-6 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-500 z-10 shadow-sm border border-slate-200 hover:bg-white transition-colors"
+                    className="absolute top-3 left-3 w-7 h-7 bg-white rounded-full flex items-center justify-center text-orange-500 z-10 shadow-lg ring-1 ring-black/5 active:scale-90 transition-transform"
                   >
-                    <span className="material-symbols-outlined text-[14px]">info</span>
+                    <span className="material-symbols-outlined text-[16px] font-bold">info</span>
                   </button>
                   <div className="aspect-square bg-slate-50 rounded-2xl mb-3 overflow-hidden relative">
                     <Image src={product.image} alt={product.name} fill className="object-cover" />
