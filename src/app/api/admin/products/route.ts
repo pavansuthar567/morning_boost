@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/lib/db';
 import Product from '@/lib/models/Product';
+import Recipe from '@/lib/models/Recipe';
+import '@/lib/models/Ingredient';
 import { authenticate, isAuthError, requireRole, ok, error } from '@/lib/middleware';
 
 // Admin: Get all products
@@ -30,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Admin: Create product
+// Admin: Create product (handles recipe creation internally)
 export async function POST(req: NextRequest) {
   try {
     const auth = await authenticate(req);
@@ -40,16 +42,26 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
     const body = await req.json();
-    const { name, price, category, image, description, recipe, isActive } = body;
+    const { recipeData, ...productFields } = body;
 
-    if (!name || !price || !image) {
+    if (!productFields.name || !productFields.price || !productFields.image) {
       return error('Name, price and image are required');
     }
 
+    // If recipe data is provided, create the recipe first
+    if (recipeData && recipeData.ingredients && recipeData.ingredients.length > 0) {
+      const newRecipe = await Recipe.create({
+        name: recipeData.name,
+        ingredients: recipeData.ingredients,
+        instructions: recipeData.instructions,
+        yieldAmount: recipeData.yieldAmount
+      });
+      productFields.recipe = newRecipe._id;
+    }
+
     const product = await Product.create({
-      name, price, category, image, description,
-      isActive: isActive !== undefined ? isActive : true,
-      recipe: recipe || undefined,
+      ...productFields,
+      isActive: productFields.isActive !== undefined ? productFields.isActive : true,
     });
 
     return ok({ product }, 201);

@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '@/store/useStore';
 
-const CATEGORIES = ['Immunity', 'Energy', 'Cleanse', 'Detox', 'Wellness'];
+const CATEGORIES = ['Juice', 'Shake', 'Smoothie', 'Other'];
+const HEALTH_GOALS = ['Immunity', 'Energy', 'Detox', 'Daily Core', 'Wellness', 'Hydration'];
 
 export default function AdminProductsPage() {
   const { token, isLiveMode, adminData } = useStore();
@@ -12,6 +13,35 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [ingredients, setIngredients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const normalizeProducts = (rawProducts: any[]) => {
+    return rawProducts.map((p: any) => {
+      if (p.recipe && p.recipe.ingredients) {
+        const recipeId = p.recipe._id;
+        return {
+          ...p,
+          recipeId,
+          recipeInstructions: Array.isArray(p.recipe.instructions) 
+            ? p.recipe.instructions 
+            : (typeof p.recipe.instructions === 'string' ? p.recipe.instructions.split('\n').filter(Boolean) : []),
+          recipe: p.recipe.ingredients.map((ri: any) => ({
+            ingredientId: ri.ingredient?._id,
+            ingredientName: ri.ingredient?.name,
+            unit: ri.ingredient?.unit,
+            qtyPerBottle: ri.quantity,
+            marketPrice: ri.ingredient?.marketPrice || 0
+          }))
+        };
+      }
+      return p;
+    });
+  };
+
+  const refreshProducts = async () => {
+    const res = await fetch('/api/admin/products', { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (data.success) setProducts(normalizeProducts(data.products || []));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,26 +60,7 @@ export default function AdminProductsPage() {
         const prodData = await prodRes.json();
         const ingData = await ingRes.json();
         
-        if (prodData.success) {
-          // Normalize recipe structure to match frontend expectations
-          const normalizedProducts = (prodData.products || []).map((p: any) => {
-            if (p.recipe && p.recipe.ingredients) {
-              return {
-                ...p,
-                recipeInstructions: (p.recipe.instructions || '').split('\n').filter(Boolean),
-                recipe: p.recipe.ingredients.map((ri: any) => ({
-                  ingredientId: ri.ingredient?._id,
-                  ingredientName: ri.ingredient?.name,
-                  unit: ri.ingredient?.unit,
-                  qtyPerBottle: ri.quantity,
-                  marketPrice: ri.ingredient?.marketPrice || 0
-                }))
-              };
-            }
-            return p;
-          });
-          setProducts(normalizedProducts);
-        }
+        if (prodData.success) setProducts(normalizeProducts(prodData.products || []));
         if (ingData.success) setIngredients(ingData.ingredients || []);
       } catch (err) {
         console.error('Failed to fetch data', err);
@@ -65,13 +76,17 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Wellness',
+    category: 'Juice',
+    healthGoal: '',
     price: 0,
     isActive: true,
     image: '',
-    recipeId: '', // To keep track if updating an existing recipe
+    description: '',
+    recipeId: '',
     recipe: [] as { ingredientId: string; qtyPerBottle: number }[],
-    recipeInstructions: [] as string[]
+    recipeInstructions: [] as string[],
+    benefits: [] as string[],
+    detailedBenefits: [] as { title: string; description: string }[]
   });
 
   const filtered = products.filter(p =>
@@ -83,13 +98,17 @@ export default function AdminProductsPage() {
     setEditingId(null);
     setFormData({
       name: '',
-      category: 'Wellness',
+      category: 'Juice',
+      healthGoal: '',
       price: 0,
       isActive: true,
       image: 'https://images.unsplash.com/photo-1610970881699-44a55b4cf703?w=500&q=80',
+      description: '',
       recipeId: '',
       recipe: [],
-      recipeInstructions: []
+      recipeInstructions: [],
+      benefits: [],
+      detailedBenefits: []
     });
     setIsDrawerOpen(true);
   };
@@ -98,13 +117,17 @@ export default function AdminProductsPage() {
     setEditingId(product._id);
     setFormData({
       name: product.name,
-      category: product.category,
+      category: product.category || 'Juice',
+      healthGoal: product.healthGoal || '',
       price: product.price,
       isActive: product.isActive,
       image: product.image,
-      recipeId: product.recipe?._id || '',
+      description: product.description || '',
+      recipeId: product.recipeId || '',
       recipe: Array.isArray(product.recipe) ? product.recipe.map((r: any) => ({ ingredientId: r.ingredientId, qtyPerBottle: r.qtyPerBottle })) : [],
-      recipeInstructions: Array.isArray(product.recipeInstructions) ? product.recipeInstructions : []
+      recipeInstructions: Array.isArray(product.recipeInstructions) ? product.recipeInstructions : [],
+      benefits: Array.isArray(product.benefits) ? product.benefits : [],
+      detailedBenefits: Array.isArray(product.detailedBenefits) ? product.detailedBenefits.map((b: any) => ({ title: b.title, description: b.description })) : []
     });
     setIsDrawerOpen(true);
   };
@@ -162,64 +185,44 @@ export default function AdminProductsPage() {
 
     setIsLoading(true);
     try {
-      let finalRecipeId = formData.recipeId;
-
-      // 1. If there's recipe data, save/update the Recipe first
-      if (formData.recipe.length > 0) {
-        const recipePayload = {
-          name: `${formData.name} Recipe`,
-          ingredients: formData.recipe.map(r => ({ ingredient: r.ingredientId, quantity: Number(r.qtyPerBottle) })),
-          instructions: formData.recipeInstructions.join('\n'),
-          yieldAmount: 1 // hardcoded to 1 bottle yield for now as per UI
-        };
-
-        const rMethod = finalRecipeId ? 'PATCH' : 'POST';
-        const rUrl = finalRecipeId ? `/api/admin/recipes/${finalRecipeId}` : '/api/admin/recipes';
-        
-        const rRes = await fetch(rUrl, {
-          method: rMethod,
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(recipePayload)
-        });
-        
-        const rData = await rRes.json();
-        if (rData.success) {
-          finalRecipeId = rData.recipe._id;
-        } else {
-          alert(`Recipe Error: ${rData.error}`);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // 2. Save/Update the Product
-      const productPayload = {
+      const payload: any = {
         name: formData.name,
         category: formData.category,
+        healthGoal: formData.healthGoal || undefined,
         price: Number(formData.price),
         isActive: formData.isActive,
         image: formData.image,
-        recipe: finalRecipeId || undefined
+        description: formData.description || undefined,
+        benefits: formData.benefits,
+        detailedBenefits: formData.detailedBenefits,
       };
 
-      const pMethod = editingId ? 'PATCH' : 'POST';
-      const pUrl = editingId ? `/api/admin/products/${editingId}` : '/api/admin/products';
+      // Include recipe data in the same payload
+      if (formData.recipe.length > 0) {
+        payload.recipeData = {
+          recipeId: formData.recipeId || undefined,
+          name: `${formData.name} Recipe`,
+          ingredients: formData.recipe.map(r => ({ ingredient: r.ingredientId, quantity: Number(r.qtyPerBottle) })),
+          instructions: formData.recipeInstructions,
+          yieldAmount: 1
+        };
+      }
 
-      const pRes = await fetch(pUrl, {
-        method: pMethod,
+      const method = editingId ? 'PATCH' : 'POST';
+      const url = editingId ? `/api/admin/products/${editingId}` : '/api/admin/products';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(productPayload)
+        body: JSON.stringify(payload)
       });
 
-      if (pRes.ok) {
+      if (res.ok) {
         setIsDrawerOpen(false);
-        // Refresh products
-        const res = await fetch('/api/admin/products', { headers: { Authorization: `Bearer ${token}` } });
-        const data = await res.json();
-        if (data.success) setProducts(data.products || []);
+        await refreshProducts();
       } else {
-        const pData = await pRes.json();
-        alert(`Product Error: ${pData.error}`);
+        const data = await res.json();
+        alert(`Error: ${data.error}`);
       }
     } catch (err) {
       console.error(err);
@@ -470,6 +473,17 @@ export default function AdminProductsPage() {
                     </select>
                   </div>
                   <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Health Goal</label>
+                    <select
+                      value={formData.healthGoal}
+                      onChange={e => setFormData({ ...formData, healthGoal: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-primary/10"
+                    >
+                      <option value="">None</option>
+                      {HEALTH_GOALS.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div>
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Price (₹)</label>
                     <input
                       type="number"
@@ -496,6 +510,99 @@ export default function AdminProductsPage() {
                     </button>
                     <span className="text-xs font-bold text-slate-600">{formData.isActive ? 'Active' : 'Draft Mode'}</span>
                   </div>
+                </div>
+              </section>
+
+              {/* Benefits Badges Editor */}
+              <section>
+                <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-2">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">verified</span>
+                    Benefit Badges
+                  </h3>
+                  <button onClick={() => setFormData({ ...formData, benefits: [...formData.benefits, ''] })} className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1 hover:opacity-80">
+                    <span className="material-symbols-outlined text-sm">add</span> Add Badge
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {formData.benefits.map((badge, idx) => (
+                    <div key={idx} className="flex gap-3 items-center">
+                      <input
+                        type="text"
+                        value={badge}
+                        onChange={e => {
+                          const updated = [...formData.benefits];
+                          updated[idx] = e.target.value;
+                          setFormData({ ...formData, benefits: updated });
+                        }}
+                        className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-primary/10"
+                        placeholder="e.g. 🥒 Deep Hydration"
+                      />
+                      <button onClick={() => {
+                        const updated = [...formData.benefits];
+                        updated.splice(idx, 1);
+                        setFormData({ ...formData, benefits: updated });
+                      }} className="text-slate-300 hover:text-rose-500 transition-colors">
+                        <span className="material-symbols-outlined text-lg">delete</span>
+                      </button>
+                    </div>
+                  ))}
+                  {formData.benefits.length === 0 && (
+                    <p className="text-xs text-slate-400 italic text-center py-4">No badges yet. Add short benefit labels like "🍊 Vitamin C Surge".</p>
+                  )}
+                </div>
+              </section>
+
+              {/* Detailed Benefits Editor */}
+              <section>
+                <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-2">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">health_and_safety</span>
+                    Detailed Benefits
+                  </h3>
+                  <button onClick={() => setFormData({ ...formData, detailedBenefits: [...formData.detailedBenefits, { title: '', description: '' }] })} className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1 hover:opacity-80">
+                    <span className="material-symbols-outlined text-sm">add</span> Add Benefit
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {formData.detailedBenefits.map((benefit, idx) => (
+                    <div key={idx} className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                      <div className="flex gap-3 items-center">
+                        <input
+                          type="text"
+                          value={benefit.title}
+                          onChange={e => {
+                            const updated = [...formData.detailedBenefits];
+                            updated[idx] = { ...updated[idx], title: e.target.value };
+                            setFormData({ ...formData, detailedBenefits: updated });
+                          }}
+                          className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold"
+                          placeholder="Benefit title, e.g. Deep Hydration"
+                        />
+                        <button onClick={() => {
+                          const updated = [...formData.detailedBenefits];
+                          updated.splice(idx, 1);
+                          setFormData({ ...formData, detailedBenefits: updated });
+                        }} className="text-slate-300 hover:text-rose-500 transition-colors">
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      </div>
+                      <textarea
+                        value={benefit.description}
+                        onChange={e => {
+                          const updated = [...formData.detailedBenefits];
+                          updated[idx] = { ...updated[idx], description: e.target.value };
+                          setFormData({ ...formData, detailedBenefits: updated });
+                        }}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium resize-none"
+                        placeholder="Detailed explanation of this benefit..."
+                        rows={2}
+                      />
+                    </div>
+                  ))}
+                  {formData.detailedBenefits.length === 0 && (
+                    <p className="text-xs text-slate-400 italic text-center py-4">No detailed benefits yet.</p>
+                  )}
                 </div>
               </section>
 
