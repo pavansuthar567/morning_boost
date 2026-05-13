@@ -8,7 +8,7 @@ export interface IRecipeItem {
 export interface IRecipe extends Document {
   name: string;
   ingredients: IRecipeItem[];
-  instructions?: string;
+  instructions?: string[];
   yieldAmount: number; // Volume in ml
   createdAt: Date;
   updatedAt: Date;
@@ -23,7 +23,7 @@ const recipeSchema = new Schema<IRecipe>(
         quantity: { type: Number, required: true },
       },
     ],
-    instructions: { type: String },
+    instructions: [{ type: String }],
     yieldAmount: { type: Number, required: true },
   },
   { timestamps: true }

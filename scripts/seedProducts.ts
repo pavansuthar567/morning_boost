@@ -22,16 +22,19 @@ const recipeSchema = new mongoose.Schema({
     ingredient: { type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient', required: true },
     quantity: { type: Number, required: true },
   }],
-  instructions: String,
+  instructions: [String],
   yieldAmount: { type: Number, required: true },
 });
 
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   price: { type: Number, required: true, default: 0 },
-  category: { type: String, enum: ['Juice', 'Shake', 'Smoothie', 'Other', 'Immunity', 'Energy', 'Detox', 'Daily Core'], default: 'Juice' },
+  category: { type: String, enum: ['Juice', 'Shake', 'Smoothie', 'Other'], default: 'Juice' },
+  healthGoal: { type: String, enum: ['Immunity', 'Energy', 'Detox', 'Daily Core', 'Wellness', 'Hydration'] },
   image: { type: String, required: true },
   description: String,
+  benefits: [String],
+  detailedBenefits: [{ title: String, description: String }],
   recipe: { type: mongoose.Schema.Types.ObjectId, ref: 'Recipe' },
   isActive: { type: Boolean, default: true },
 });
@@ -101,7 +104,13 @@ async function seedDatabase() {
           { ingredient: getIngId('Lemon'), quantity: 0.5 },
           { ingredient: getIngId('Ginger'), quantity: 10 },
         ],
-        instructions: 'Wash cucumber, celery, and spinach thoroughly in cold ozone water. Pass cucumber and celery through the cold press first for liquid base. Add green apples, followed by spinach leaves. Finish by pressing lemon (peeled) and ginger root. Double strain to remove micro-fibers for a smooth texture.'
+        instructions: [
+          'Wash cucumber, celery, and spinach thoroughly in cold ozone water.',
+          'Pass cucumber and celery through the cold press first for liquid base.',
+          'Add green apples, followed by spinach leaves.',
+          'Finish by pressing lemon (peeled) and ginger root.',
+          'Double strain to remove micro-fibers for a smooth texture.'
+        ]
       },
       {
         name: 'Citrus Glow Recipe',
@@ -113,7 +122,14 @@ async function seedDatabase() {
           { ingredient: getIngId('Turmeric Root'), quantity: 15 },
           { ingredient: getIngId('Black Pepper'), quantity: 1 },
         ],
-        instructions: 'Peel oranges and pineapple completely. Scrub carrots well. Cold press carrots first, followed by the pineapple chunks. Juice the oranges and fresh turmeric root. Add a tiny pinch of finely ground black pepper directly into the mixing vat. Stir gently and bottle immediately to prevent Vitamin C oxidation.'
+        instructions: [
+          'Peel oranges and pineapple completely.',
+          'Scrub carrots well.',
+          'Cold press carrots first, followed by the pineapple chunks.',
+          'Juice the oranges and fresh turmeric root.',
+          'Add a tiny pinch of finely ground black pepper directly into the mixing vat.',
+          'Stir gently and bottle immediately to prevent Vitamin C oxidation.'
+        ]
       },
       {
         name: 'Beet Rooted Recipe',
@@ -125,7 +141,14 @@ async function seedDatabase() {
           { ingredient: getIngId('Pomegranate'), quantity: 0.05 },
           { ingredient: getIngId('Mint Leaves'), quantity: 0.5 },
         ],
-        instructions: 'Extract arils from pomegranate. Scrub beetroots rigorously. Cold press the watermelon first to create a highly hydrating base liquid. Process the red apples and beetroots through the heavy press. Crush the pomegranate arils alongside the fresh mint for infused flavor. Mix thoroughly. Ensure deep ruby red hue without separation.'
+        instructions: [
+          'Extract arils from pomegranate.',
+          'Scrub beetroots rigorously.',
+          'Cold press the watermelon first to create a highly hydrating base liquid.',
+          'Process the red apples and beetroots through the heavy press.',
+          'Crush the pomegranate arils alongside the fresh mint for infused flavor.',
+          'Mix thoroughly. Ensure deep ruby red hue without separation.'
+        ]
       },
       {
         name: 'Liquid Gold Recipe',
@@ -137,7 +160,12 @@ async function seedDatabase() {
           { ingredient: getIngId('Lemon'), quantity: 0.5 },
           { ingredient: getIngId('Mint Leaves'), quantity: 0.2 },
         ],
-        instructions: 'Peel the pineapple and cut into small chunks. Cold press the yellow apples and pineapple first. Add the ginger root and peeled lemon. Lightly crush mint leaves and stir into the final yield.'
+        instructions: [
+          'Peel the pineapple and cut into small chunks.',
+          'Cold press the yellow apples and pineapple first.',
+          'Add the ginger root and peeled lemon.',
+          'Lightly crush mint leaves and stir into the final yield.'
+        ]
       },
       {
         name: 'Ruby Cleanse Recipe',
@@ -148,7 +176,12 @@ async function seedDatabase() {
           { ingredient: getIngId('Carrot'), quantity: 0.2 },
           { ingredient: getIngId('Red Grape'), quantity: 0.15 },
         ],
-        instructions: 'Extract pomegranate arils. Wash grapes and carrots thoroughly. Process grapes first, followed by the pomegranate arils. Cold press the carrots and beetroot to yield the dense red base. Mix well and double strain for a silky smooth finish.'
+        instructions: [
+          'Extract pomegranate arils. Wash grapes and carrots thoroughly.',
+          'Process grapes first, followed by the pomegranate arils.',
+          'Cold press the carrots and beetroot to yield the dense red base.',
+          'Mix well and double strain for a silky smooth finish.'
+        ]
       },
       {
         name: 'Alkaline Green Recipe',
@@ -161,7 +194,12 @@ async function seedDatabase() {
           { ingredient: getIngId('Lemon'), quantity: 1 },
           { ingredient: getIngId('Green Apple'), quantity: 0.05 },
         ],
-        instructions: 'Wash all greens rigorously in ozone water. Cold press cucumber and celery for maximum liquid yield. Slowly press kale, parsley, and green apple. Finish with a whole peeled lemon to cut the earthiness.'
+        instructions: [
+          'Wash all greens rigorously in ozone water.',
+          'Cold press cucumber and celery for maximum liquid yield.',
+          'Slowly press kale, parsley, and green apple.',
+          'Finish with a whole peeled lemon to cut the earthiness.'
+        ]
       }
     ];
 
@@ -173,56 +211,92 @@ async function seedDatabase() {
 
     const products = [
       {
-        name: 'Green Vitality Real',
+        name: 'Green Vitality',
         price: 120,
-        category: 'Immunity',
+        category: 'Juice',
+        healthGoal: 'Immunity',
         image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1QuAZLQgXCBHxy0BcEKhRglzerfWWC-1vPn7NXZciyOqV_MZgInCEWjivoDmzw_XLtny0YeXfJoFb7zrHBi3BTX-8QVbJRBdjeAPbKJnhIZLPQXlrJ4kUlrFihd_qCx4lbucJ6uXSk0tXYwFuQb2-gr_4zjfE1XZ-0Bf5AoVu12NBnleBwT9AbcdsNO2bzPcNzX8rEN4tdP6e14o9wZrdNAnKYZPERcoTEOnO32z3afdKSme0XJXKoEMDo-gB7Byc5EnnQIwmZwc',
         description: 'A powerful blend of alkalizing greens and hydrating cucumber, designed to flush toxins and rebuild cellular strength.',
+        benefits: ['🥒 Deep Hydration', '🌱 Cell Rebuilder', '✨ Toxin Flush'],
+        detailedBenefits: [
+          { title: 'Deep Hydration', description: 'Cucumber and celery provide essential electrolytes to deeply hydrate at a cellular level.' },
+          { title: 'Cell Rebuilder', description: 'Loaded with chlorophyll from spinach, supporting healthy red blood cells.' }
+        ],
         recipe: getRecId('Green Vitality Recipe'),
         isActive: true
       },
       {
-        name: 'Citrus Glow Real',
+        name: 'Citrus Glow',
         price: 110,
-        category: 'Energy',
+        category: 'Juice',
+        healthGoal: 'Energy',
         image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBbA9CAicGuI3_qnblBkoS5JUaLGJiLMkMgWW-UhG8AGeY2G4HAMMHz2LmIpvAX8BD2ZC0GqHCeI0iY5ostmkp69mQheBa86_T9N-QhcOXWjJfkZblGf7Xk0L3yIPlpqysdbQIXRcR3g6GPrg7JlWwAHm-wR9AoJOCCirdtxNpCLmHdH20oQ6n2njZ0YxCLDAk1_zkwHS5VKKAzyxxFvxwAfoqCPI5jgkulkKw6ePnVabZrU_A5T1CQ9jRnJXF0Dq27zR1n7e3oPdU',
         description: 'A vibrant, metabolism-boosting citrus blend packed with vitamin C and anti-inflammatory turmeric activated by black pepper.',
+        benefits: ['🍊 Vitamin C Surge', '🔥 Metabolism Boost', '✨ Glowing Skin'],
+        detailedBenefits: [
+          { title: 'Vitamin C Surge', description: 'Oranges and pineapples deliver a massive hit of natural Vitamin C for immunity and skin health.' },
+          { title: 'Metabolism Boost', description: 'Fresh turmeric root combined with a hint of black pepper significantly increases absorption and boosts metabolism.' }
+        ],
         recipe: getRecId('Citrus Glow Recipe'),
         isActive: true
       },
       {
-        name: 'Beet Rooted Real',
+        name: 'Beet Rooted',
         price: 130,
-        category: 'Detox',
+        category: 'Juice',
+        healthGoal: 'Detox',
         image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIrfiBzFWaXV4otHis8tCw4zQvYiuhbSV-LBjN1kSlQTzUDlDFg4gW1vjSDrpxjNh_YAIgmwhL0skxCoTSyL5OFVN3as4AR_fFgJoWIHnBgC6WfJmRkgVGEnpBIfabjNRsPPVQ2qMrBM2dMcfJ_JsS2_kkT9FOQ_Kv8lAG6KcGMHgljGIoUuqyineCTxBz-1fX8JtkmvScLUQt9ha9RmprJbTCrMCZQpO8SvsRnT7dnU5Y_KAbefSPmtlhYqohE1lWjUmpnjvasf8',
         description: 'An earthy, stamina-building root blend that improves blood flow, paired with hydrating watermelon and sweet pomegranate.',
+        benefits: ['🩸 Improved Blood Flow', '🏃 Stamina Builder', '❤️ Heart Health'],
+        detailedBenefits: [
+          { title: 'Improved Blood Flow', description: 'Beetroots are naturally high in nitrates, which the body converts to nitric oxide, improving blood flow and lowering blood pressure.' },
+          { title: 'Stamina Builder', description: 'Increased oxygen delivery to muscles makes this the perfect pre-workout juice.' }
+        ],
         recipe: getRecId('Beet Rooted Recipe'),
         isActive: true
       },
       {
-        name: 'Liquid Gold Real',
+        name: 'Liquid Gold',
         price: 115,
-        category: 'Immunity',
+        category: 'Juice',
+        healthGoal: 'Immunity',
         image: '/products/liquid_gold_glass.png',
         description: 'A tropical, anti-inflammatory blend that soothes the stomach and boosts immunity.',
+        benefits: ['🍍 Digestion Aid', '🛡️ Immunity Boost', '✨ Anti-Inflammatory'],
+        detailedBenefits: [
+          { title: 'Digestion Aid', description: 'Pineapple contains bromelain, a powerful enzyme that helps break down proteins and soothe the gut.' },
+          { title: 'Immunity Boost', description: 'Loaded with Vitamin C from lemon and yellow apples to ward off infections.' },
+        ],
         recipe: getRecId('Liquid Gold Recipe'),
         isActive: true
       },
       {
-        name: 'Ruby Cleanse Real',
+        name: 'Ruby Cleanse',
         price: 140,
-        category: 'Detox',
+        category: 'Juice',
+        healthGoal: 'Detox',
         image: '/products/ruby_cleanse_glass.png',
         description: 'A deep red antioxidant powerhouse that cleanses the blood and supports liver function.',
+        benefits: ['🍷 Powerful Antioxidants', '🩸 Blood Purifier', '👀 Vision Health'],
+        detailedBenefits: [
+          { title: 'Powerful Antioxidants', description: 'Red grapes and pomegranate provide massive amounts of resveratrol and punicalagins.' },
+          { title: 'Vision Health', description: 'High in beta-carotene from carrots, essential for maintaining healthy eyes.' },
+        ],
         recipe: getRecId('Ruby Cleanse Recipe'),
         isActive: true
       },
       {
-        name: 'Alkaline Green Real',
+        name: 'Alkaline Green',
         price: 125,
-        category: 'Daily Core',
+        category: 'Juice',
+        healthGoal: 'Daily Core',
         image: '/products/alkaline_green_glass.png',
         description: 'The ultimate daily core green juice. Highly alkalizing, extremely low in natural sugars.',
+        benefits: ['🥬 Highly Alkalizing', '⚖️ Low Sugar', '🦴 Bone Health'],
+        detailedBenefits: [
+          { title: 'Highly Alkalizing', description: 'Floods the body with chlorophyll, restoring a healthy alkaline pH balance.' },
+          { title: 'Bone Health', description: 'Kale is packed with Vitamin K, crucial for bone density and calcium absorption.' },
+        ],
         recipe: getRecId('Alkaline Green Recipe'),
         isActive: true
       }

@@ -256,7 +256,7 @@ const useStore = create<AppStore>()(
 
       // ---- Config & Constants ----
       config: {
-        juiceOptions: ['Green Vitality Real', 'Citrus Glow Real', 'Beet Rooted Real', 'Liquid Gold Real', 'Ruby Cleanse Real', 'Alkaline Green Real'],
+        juiceOptions: ['Green Vitality', 'Citrus Glow', 'Beet Rooted', 'Liquid Gold', 'Ruby Cleanse', 'Alkaline Green'],
         dietOptions: ['Vegan', 'No Ginger', 'No Sugar', 'Keto', 'Gluten-Free', 'No Dairy'],
         areas: ['Dindoli', 'Bhatar', 'Vesu', 'Althan'],
         societiesByArea: {
@@ -943,7 +943,7 @@ const useStore = create<AppStore>()(
         ],
         inventory: [
           {
-            _id: 'prod_1', name: 'Green Vitality Real', price: 120, category: 'Immunity', isActive: true, stock: 142, stockLevel: 'ok',
+            _id: 'prod_1', name: 'Green Vitality', price: 120, category: 'Juice', healthGoal: 'Immunity', isActive: true, stock: 150, stockLevel: 'ok',
             description: 'A powerful blend of alkalizing greens and hydrating cucumber, designed to flush toxins and rebuild cellular strength.',
             ingredients: ['Spinach', 'Celery', 'Cucumber', 'Green Apple', 'Lemon', 'Ginger'],
             benefits: ['🌿 Anti-Inflammatory', '💧 Deep Hydration', '🧬 Gut Health'],
@@ -970,7 +970,7 @@ const useStore = create<AppStore>()(
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1QuAZLQgXCBHxy0BcEKhRglzerfWWC-1vPn7NXZciyOqV_MZgInCEWjivoDmzw_XLtny0YeXfJoFb7zrHBi3BTX-8QVbJRBdjeAPbKJnhIZLPQXlrJ4kUlrFihd_qCx4lbucJ6uXSk0tXYwFuQb2-gr_4zjfE1XZ-0Bf5AoVu12NBnleBwT9AbcdsNO2bzPcNzX8rEN4tdP6e14o9wZrdNAnKYZPERcoTEOnO32z3afdKSme0XJXKoEMDo-gB7Byc5EnnQIwmZwc',
           },
           {
-            _id: 'prod_2', name: 'Citrus Glow Real', price: 110, category: 'Energy', isActive: true, stock: 24, stockLevel: 'low',
+            _id: 'prod_2', name: 'Citrus Glow', price: 110, category: 'Juice', healthGoal: 'Energy', isActive: true, stock: 120, stockLevel: 'ok',
             description: 'A vibrant, metabolism-boosting citrus blend packed with vitamin C and anti-inflammatory turmeric activated by black pepper.',
             ingredients: ['Orange', 'Carrot', 'Pineapple', 'Turmeric Root', 'Black Pepper'],
             benefits: ['✨ Skin Radiance', '⚡ Natural Energy', '🛡️ Immunity Boost'],
@@ -996,7 +996,7 @@ const useStore = create<AppStore>()(
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBbA9CAicGuI3_qnblBkoS5JUaLGJiLMkMgWW-UhG8AGeY2G4HAMMHz2LmIpvAX8BD2ZC0GqHCeI0iY5ostmkp69mQheBa86_T9N-QhcOXWjJfkZblGf7Xk0L3yIPlpqysdbQIXRcR3g6GPrg7JlWwAHm-wR9AoJOCCirdtxNpCLmHdH20oQ6n2njZ0YxCLDAk1_zkwHS5VKKAzyxxFvxwAfoqCPI5jgkulkKw6ePnVabZrU_A5T1CQ9jRnJXF0Dq27zR1n7e3oPdU',
           },
           {
-            _id: 'prod_3', name: 'Beet Rooted Real', price: 130, category: 'Detox', isActive: true, stock: 88, stockLevel: 'ok',
+            _id: 'prod_3', name: 'Beet Rooted', price: 130, category: 'Juice', healthGoal: 'Detox', isActive: true, stock: 80, stockLevel: 'low',
             description: 'An earthy, stamina-building root blend that improves blood flow, paired with hydrating watermelon and sweet pomegranate.',
             ingredients: ['Beetroot', 'Pomegranate', 'Watermelon', 'Red Apple', 'Mint Leaves'],
             benefits: ['🩸 Iron Rich', '🏃‍♂️ Stamina Boost', '❤️ Heart Health'],
@@ -1022,7 +1022,7 @@ const useStore = create<AppStore>()(
             image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIrfiBzFWaXV4otHis8tCw4zQvYiuhbSV-LBjN1kSlQTzUDlDFg4gW1vjSDrpxjNh_YAIgmwhL0skxCoTSyL5OFVN3as4AR_fFgJoWIHnBgC6WfJmRkgVGEnpBIfabjNRsPPVQ2qMrBM2dMcfJ_JsS2_kkT9FOQ_Kv8lAG6KcGMHgljGIoUuqyineCTxBz-1fX8JtkmvScLUQt9ha9RmprJbTCrMCZQpO8SvsRnT7dnU5Y_KAbefSPmtlhYqohE1lWjUmpnjvasf8',
           },
           {
-            _id: 'prod_4', name: 'Liquid Gold Real', price: 115, category: 'Immunity', isActive: true, stock: 45, stockLevel: 'ok',
+            _id: 'prod_4', name: 'Liquid Gold', price: 115, category: 'Juice', healthGoal: 'Immunity', isActive: true, stock: 45, stockLevel: 'ok',
             description: 'A tropical, anti-inflammatory blend that soothes the stomach and boosts immunity.',
             ingredients: ['Pineapple', 'Yellow Apple', 'Ginger', 'Lemon', 'Mint Leaves'],
             benefits: ['🍍 Digestion Aid', '🛡️ Immunity Boost', '✨ Anti-Inflammatory'],
@@ -1046,7 +1046,7 @@ const useStore = create<AppStore>()(
             image: '/products/liquid_gold_glass.png',
           },
           {
-            _id: 'prod_5', name: 'Ruby Cleanse Real', price: 140, category: 'Detox', isActive: true, stock: 30, stockLevel: 'low',
+            _id: 'prod_5', name: 'Ruby Cleanse', price: 140, category: 'Juice', healthGoal: 'Detox', isActive: true, stock: 30, stockLevel: 'low',
             description: 'A deep red antioxidant powerhouse that cleanses the blood and supports liver function.',
             ingredients: ['Pomegranate', 'Beetroot', 'Carrot', 'Red Grape'],
             benefits: ['🍷 Powerful Antioxidants', '🩸 Blood Purifier', '👀 Vision Health'],
@@ -1069,7 +1069,7 @@ const useStore = create<AppStore>()(
             image: '/products/ruby_cleanse_glass.png',
           },
           {
-            _id: 'prod_6', name: 'Alkaline Green Real', price: 125, category: 'Daily Core', isActive: true, stock: 95, stockLevel: 'ok',
+            _id: 'prod_6', name: 'Alkaline Green', price: 125, category: 'Juice', healthGoal: 'Daily Core', isActive: true, stock: 95, stockLevel: 'ok',
             description: 'The ultimate daily core green juice. Highly alkalizing, extremely low in natural sugars.',
             ingredients: ['Kale', 'Cucumber', 'Celery', 'Parsley', 'Lemon', 'Green Apple'],
             benefits: ['🥬 Highly Alkalizing', '⚖️ Low Sugar', '🦴 Bone Health'],

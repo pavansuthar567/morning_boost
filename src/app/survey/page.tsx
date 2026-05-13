@@ -17,6 +17,7 @@ export default function SurveyPage() {
   const [selectedJuices, setSelectedJuices] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [detailProduct, setDetailProduct] = useState<any>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -175,11 +176,29 @@ export default function SurveyPage() {
                       <span className="material-symbols-outlined text-[14px] font-bold">check</span>
                     </div>
                   )}
+                  {/* Info Icon */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDetailProduct(product); }}
+                    className="absolute top-3 left-3 w-6 h-6 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-500 z-10 shadow-sm border border-slate-200 hover:bg-white transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">info</span>
+                  </button>
                   <div className="aspect-square bg-slate-50 rounded-2xl mb-3 overflow-hidden relative">
                     <Image src={product.image} alt={product.name} fill className="object-cover" />
                   </div>
                   <h3 className="font-bold text-sm text-slate-900 leading-tight mb-1">{product.name}</h3>
-                  <p className="text-[10px] text-slate-500 font-medium line-clamp-2">{product.ingredients?.join(', ')}</p>
+                  <p className="text-[10px] text-slate-500 font-medium line-clamp-2 mb-2">{product.ingredients?.join(', ')}</p>
+                  
+                  {/* Benefits Badges */}
+                  {product.benefits && product.benefits.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-auto">
+                      {product.benefits.slice(0, 2).map((benefit: string, idx: number) => (
+                        <span key={idx} className="bg-slate-50 text-slate-600 text-[9px] px-1.5 py-0.5 rounded-md font-semibold border border-slate-100">
+                          {benefit}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -232,6 +251,90 @@ export default function SurveyPage() {
         </button>
 
       </main>
+
+      {/* Product Detail Bottom Sheet */}
+      {detailProduct && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setDetailProduct(null)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div 
+            className="relative bg-white w-full max-w-lg rounded-t-3xl max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 bg-slate-300 rounded-full" />
+            </div>
+            
+            {/* Image */}
+            <div className="w-full aspect-[4/3] relative overflow-hidden">
+              <Image src={detailProduct.image} alt={detailProduct.name} fill className="object-cover" />
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Name & Price */}
+              <div>
+                <h2 className="text-2xl font-headline font-bold text-slate-900">{detailProduct.name}</h2>
+                {detailProduct.price && (
+                  <p className="text-orange-600 font-bold text-lg mt-1">₹{detailProduct.price}</p>
+                )}
+              </div>
+
+              {/* Description */}
+              {detailProduct.description && (
+                <p className="text-sm text-slate-600 leading-relaxed">{detailProduct.description}</p>
+              )}
+
+              {/* Benefits Badges */}
+              {detailProduct.benefits && detailProduct.benefits.length > 0 && (
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Benefits</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {detailProduct.benefits.map((b: string, i: number) => (
+                      <span key={i} className="bg-orange-50 text-orange-700 text-xs px-3 py-1.5 rounded-full font-bold border border-orange-100">
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Detailed Benefits */}
+              {detailProduct.detailedBenefits && detailProduct.detailedBenefits.length > 0 && (
+                <div className="space-y-3">
+                  {detailProduct.detailedBenefits.map((db: any, i: number) => (
+                    <div key={i} className="bg-slate-50 rounded-xl p-4">
+                      <h4 className="font-bold text-sm text-slate-800 mb-1">{db.title}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">{db.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Ingredients */}
+              {detailProduct.ingredients && detailProduct.ingredients.length > 0 && (
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Ingredients</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {detailProduct.ingredients.map((ing: string, i: number) => (
+                      <span key={i} className="bg-slate-100 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold">
+                        {ing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Close button */}
+              <button 
+                onClick={() => setDetailProduct(null)}
+                className="w-full bg-slate-100 text-slate-700 py-3.5 rounded-2xl font-bold text-sm active:scale-[0.98] transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
