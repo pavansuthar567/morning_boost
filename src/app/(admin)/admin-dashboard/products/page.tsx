@@ -79,6 +79,8 @@ export default function AdminProductsPage() {
     category: 'Juice',
     healthGoal: '',
     price: 0,
+    servingSize: 300,
+    unit: 'ml',
     isActive: true,
     image: '',
     description: '',
@@ -101,6 +103,8 @@ export default function AdminProductsPage() {
       category: 'Juice',
       healthGoal: '',
       price: 0,
+      servingSize: 300,
+      unit: 'ml',
       isActive: true,
       image: 'https://images.unsplash.com/photo-1610970881699-44a55b4cf703?w=500&q=80',
       description: '',
@@ -120,6 +124,8 @@ export default function AdminProductsPage() {
       category: product.category || 'Juice',
       healthGoal: product.healthGoal || '',
       price: product.price,
+      servingSize: product.servingSize || 300,
+      unit: product.unit || 'ml',
       isActive: product.isActive,
       image: product.image,
       description: product.description || '',
@@ -190,6 +196,8 @@ export default function AdminProductsPage() {
         category: formData.category,
         healthGoal: formData.healthGoal || undefined,
         price: Number(formData.price),
+        servingSize: Number(formData.servingSize) || 300,
+        unit: formData.unit || 'ml',
         isActive: formData.isActive,
         image: formData.image,
         description: formData.description || undefined,
@@ -308,6 +316,23 @@ export default function AdminProductsPage() {
                   >
                     <span className="material-symbols-outlined text-sm">{isExpanded ? 'expand_less' : 'receipt_long'}</span>
                     {isExpanded ? 'Close Recipe' : 'View Recipe'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+                      if (!isLiveMode) { alert('Enable Live Mode to delete.'); return; }
+                      try {
+                        const res = await fetch(`/api/admin/products/${product._id}`, {
+                          method: 'DELETE',
+                          headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (res.ok) await refreshProducts();
+                        else alert('Failed to delete product.');
+                      } catch { alert('Error deleting product.'); }
+                    }}
+                    className="px-3 py-2 border border-rose-200 text-rose-500 text-xs font-bold rounded-xl hover:bg-rose-50 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
                   </button>
                 </div>
               </div>
@@ -490,6 +515,38 @@ export default function AdminProductsPage() {
                       value={formData.price}
                       onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-primary/10"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Serving Size</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={formData.servingSize}
+                        onChange={e => setFormData({ ...formData, servingSize: Number(e.target.value) })}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-primary/10"
+                      />
+                      <select
+                        value={formData.unit}
+                        onChange={e => setFormData({ ...formData, unit: e.target.value })}
+                        className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-3 font-bold focus:ring-2 focus:ring-primary/10"
+                      >
+                        <option value="ml">ml</option>
+                        <option value="gm">gm</option>
+                        <option value="pcs">pcs</option>
+                        <option value="kg">kg</option>
+                        <option value="l">l</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Description</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={e => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none"
+                      placeholder="Short product description..."
+                      rows={2}
                     />
                   </div>
                   <div className="col-span-2">
