@@ -251,7 +251,7 @@ const useStore = create<AppStore>()(
       // ---- Connection State ----
       isBackendConnected: false,
       setIsBackendConnected: (connected) => set({ isBackendConnected: connected }),
-      isLiveMode: false,
+      isLiveMode: true,
       setIsLiveMode: (live) => set({ isLiveMode: live }),
 
       // ---- Config & Constants ----
