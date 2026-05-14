@@ -78,16 +78,21 @@ export default function SurveyPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] font-body text-slate-900 pb-20">
-      {/* Header */}
-      <header className="bg-white px-6 py-8 shadow-sm border-b border-slate-100 text-center sticky top-0 z-30">
-        <h1 className="text-3xl font-headline font-black tracking-tighter text-slate-900 leading-tight">
-          Want Fresh Juice<br/>in your Society?
+      {/* Sticky Logo Bar */}
+      <div className="bg-white px-6 py-3 shadow-sm border-b border-slate-100 text-center sticky top-0 z-30">
+        <p className="text-lg font-headline font-black text-primary italic">Morning Boost</p>
+      </div>
+
+      {/* Hero */}
+      <header className="bg-white px-6 py-4 text-center">
+        <h1 className="text-2xl font-headline font-black tracking-tighter text-slate-900 leading-tight">
+          Want Fresh Juice<br/>at Your Doorstep?
         </h1>
-        <p className="text-slate-500 text-sm mt-3 max-w-sm mx-auto font-medium">
-          We are expanding! Let us know what you want and how often, and we'll launch in your society next.
+        <p className="text-slate-500 text-xs mt-2 max-w-sm mx-auto font-medium">
+          We're launching soon in your area! Tell us what you love and how often, and we'll bring it to your door.
         </p>
         {!isLiveMode && (
-          <div className="mt-3 inline-block bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+          <div className="mt-2 inline-block bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
             Demo Mode Active
           </div>
         )}
