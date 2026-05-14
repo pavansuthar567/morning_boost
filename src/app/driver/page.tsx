@@ -502,19 +502,6 @@ export default function DriverDashboard() {
         )}
       </main>
 
-      {/* Admin quick link (visible only to admin role) */}
-      {user?.role === 'admin' && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-          <Link
-            href="/admin-dashboard"
-            className="flex items-center gap-2 bg-white/90 backdrop-blur-md border border-slate-200 px-5 py-2.5 rounded-full text-xs font-bold shadow-xl text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-            Admin Panel
-          </Link>
-        </div>
-      )}
-
       {/* Confirm Delivery Modal */}
       {confirmDrop && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">

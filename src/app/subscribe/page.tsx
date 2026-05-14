@@ -55,10 +55,6 @@ function SubscribeContent() {
   }, [products.length, prefillJuiceId, subscription, router]);
 
   const displayProducts = products || [];
-  const categories = ['All', ...Array.from(new Set(displayProducts.map(p => p.category)))];
-  const filteredProducts = activeCategory === 'All'
-    ? displayProducts
-    : displayProducts.filter(p => p.category === activeCategory);
 
   const filledDays = Object.keys(schedule).length;
   const allFilled = filledDays === 7;
@@ -180,78 +176,82 @@ function SubscribeContent() {
           <p className="text-lg text-on-surface-variant max-w-xl mx-auto">Build your perfect week. Tap the days you want each juice delivered to your door.</p>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${activeCategory === category
-                ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105 ring-2 ring-primary/20'
-                : 'bg-white border border-slate-100 text-slate-500 hover:bg-orange-50 hover:text-primary hover:border-orange-100'
-                }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        {/* Step 1: Bento Style Product Grid with Days Selection */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-16">
-          {filteredProducts.map((product) => {
-            const isJuiceActive = Object.values(schedule).includes(product._id);
+        {/* Categories Section */}
+        <div className="space-y-16 mb-16">
+          {['Juice', 'Shake', 'Fruit Plate'].map(category => {
+            const categoryProducts = displayProducts.filter(p => p.category === category);
+            if (categoryProducts.length === 0) return null;
+            
+            let categoryIcon = 'local_drink';
+            if (category === 'Shake') categoryIcon = 'blender';
+            if (category === 'Fruit Plate') categoryIcon = 'nutrition';
 
             return (
-              <div key={product._id} className={`group flex flex-row p-4 rounded-3xl transition-all duration-300 ${isJuiceActive ? 'bg-orange-50 border-2 border-primary shadow-lg shadow-orange-900/5' : 'bg-surface-container-lowest border-2 border-transparent hover:border-slate-100 hover:shadow-md'}`}>
-
-                {/* Left Side: Vertical Big Image & Info */}
-                <div className="flex flex-col flex-1 pr-4 border-r border-slate-100 min-w-0">
-                  <div className="w-full h-48 rounded-2xl flex-shrink-0 bg-slate-100 overflow-hidden shadow-inner mb-4 relative">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-700" />
-                    <span className="absolute top-2 left-2 inline-block px-2 py-1 rounded bg-white/90 backdrop-blur-md shadow-sm text-[8px] font-black uppercase tracking-widest text-primary border border-white">
-                      {product.category}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col flex-1">
-                    <h3 className="text-xl font-bold font-headline truncate pr-1 mb-1">{product.name}</h3>
-                    <span className="text-lg font-black text-on-surface whitespace-nowrap mb-2">₹{product.price} <span className="text-xs font-bold text-slate-400">/day</span></span>
-                    <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed opacity-80 mb-3">
-                      {product.description || "A fresh blend crafted for your daily vitality and energy."}
-                    </p>
-                    {product.benefits && product.benefits.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-auto">
-                        {product.benefits.map((b: string, i: number) => (
-                          <span key={i} className="text-[7px] uppercase tracking-widest font-black bg-surface-container text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 truncate shadow-sm">
-                            {b.replace(/^[^\w\s]\s/g, '')}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Side: Vertical Day Selection Pills */}
-                <div className="flex flex-col justify-between pl-3 gap-1 py-1 w-12">
-                  {DAY_LABELS.map(day => {
-                    const isAssignedToThis = schedule[day.index] === product._id;
-                    const isAssignedToOther = schedule[day.index] && !isAssignedToThis;
+              <div key={category}>
+                <h2 className="text-xl md:text-2xl font-headline font-bold text-on-surface mb-6 flex items-center gap-3">
+                  <span className="material-symbols-outlined text-primary bg-orange-50 p-2 rounded-full">{categoryIcon}</span>
+                  {category === 'Juice' ? 'Fresh Cold-Pressed Juices' : category === 'Shake' ? 'Protein & Thick Shakes' : 'Fresh Fruit Plates'}
+                </h2>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {categoryProducts.map((product) => {
+                    const isJuiceActive = Object.values(schedule).includes(product._id);
 
                     return (
-                      <button
-                        key={day.index}
-                        onClick={() => toggleDay(day.index, product._id)}
-                        className={`w-full flex-1 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer select-none
-                          ${isAssignedToThis
-                            ? 'bg-primary text-white shadow-md shadow-primary/20 scale-105 font-black z-10'
-                            : isAssignedToOther
-                              ? 'bg-slate-50 text-slate-300 opacity-50 font-bold hover:bg-slate-100 hover:text-slate-400'
-                              : 'bg-transparent text-slate-400 font-bold hover:bg-orange-50 hover:text-primary hover:scale-[1.10]'
-                          }
-                        `}
-                      >
-                        <span className="text-[10px] uppercase tracking-tighter">{day.short}</span>
-                      </button>
+                      <div key={product._id} className={`group flex flex-row p-4 rounded-3xl transition-all duration-300 ${isJuiceActive ? 'bg-orange-50 border-2 border-primary shadow-lg shadow-orange-900/5' : 'bg-surface-container-lowest border-2 border-transparent hover:border-slate-100 hover:shadow-md'}`}>
+
+                        {/* Left Side: Vertical Big Image & Info */}
+                        <div className="flex flex-col flex-1 pr-4 border-r border-slate-100 min-w-0">
+                          <div className="w-full h-48 rounded-2xl flex-shrink-0 bg-slate-100 overflow-hidden shadow-inner mb-4 relative">
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-700" />
+                            <span className="absolute top-2 left-2 inline-block px-2 py-1 rounded bg-white/90 backdrop-blur-md shadow-sm text-[8px] font-black uppercase tracking-widest text-primary border border-white">
+                              {product.category}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col flex-1">
+                            <h3 className="text-xl font-bold font-headline truncate pr-1 mb-1">{product.name}</h3>
+                            <span className="text-lg font-black text-on-surface whitespace-nowrap mb-2">₹{product.price} <span className="text-xs font-bold text-slate-400">/day</span></span>
+                            <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed opacity-80 mb-3 flex-grow">
+                              {product.description || "A fresh blend crafted for your daily vitality and energy."}
+                            </p>
+                            {product.benefits && product.benefits.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-auto">
+                                {product.benefits.slice(0, 2).map((b: string, i: number) => (
+                                  <span key={i} className="text-[7px] uppercase tracking-widest font-black bg-surface-container text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 truncate shadow-sm">
+                                    {b.replace(/^[^\w\s]\s/g, '')}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right Side: Vertical Day Selection Pills */}
+                        <div className="flex flex-col justify-between pl-3 gap-1 py-1 w-12">
+                          {DAY_LABELS.map(day => {
+                            const isAssignedToThis = schedule[day.index] === product._id;
+                            const isAssignedToOther = schedule[day.index] && !isAssignedToThis;
+
+                            return (
+                              <button
+                                key={day.index}
+                                onClick={() => toggleDay(day.index, product._id)}
+                                className={`w-full flex-1 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer select-none
+                                  ${isAssignedToThis
+                                    ? 'bg-primary text-white shadow-md shadow-primary/20 scale-105 font-black z-10'
+                                    : isAssignedToOther
+                                      ? 'bg-slate-50 text-slate-300 opacity-50 font-bold hover:bg-slate-100 hover:text-slate-400'
+                                      : 'bg-transparent text-slate-400 font-bold hover:bg-orange-50 hover:text-primary hover:scale-[1.10]'
+                                  }
+                                `}
+                              >
+                                <span className="text-[10px] uppercase tracking-tighter">{day.short}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>

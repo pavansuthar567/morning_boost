@@ -21,7 +21,7 @@ const productSchema = new Schema<IProduct>(
   {
     name: { type: String, required: true, trim: true },
     price: { type: Number, required: true, default: 0 },
-    category: { type: String, enum: ['Juice', 'Shake', 'Smoothie', 'Other'], default: 'Juice' },
+    category: { type: String, enum: ['Juice', 'Shake', 'Smoothie', 'Fruit Plate', 'Other'], default: 'Juice' },
     healthGoal: { type: String, enum: ['Immunity', 'Energy', 'Detox', 'Daily Core', 'Wellness', 'Hydration'] },
     image: { type: String, required: true },
     description: { type: String },

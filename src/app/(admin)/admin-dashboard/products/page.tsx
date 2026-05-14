@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import useStore from '@/store/useStore';
 
-const CATEGORIES = ['Juice', 'Shake', 'Smoothie', 'Other'];
+const CATEGORIES = ['Juice', 'Shake', 'Smoothie', 'Fruit Plate', 'Other'];
 const HEALTH_GOALS = ['Immunity', 'Energy', 'Detox', 'Daily Core', 'Wellness', 'Hydration'];
 
-export default function AdminProductsPage() {
+function AdminProductsContent() {
   const { token, isLiveMode, adminData } = useStore();
-  const [search, setSearch] = useState('');
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams?.get('search') || '';
+  const [search, setSearch] = useState(initialSearch);
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [ingredients, setIngredients] = useState<any[]>([]);
@@ -282,170 +285,177 @@ export default function AdminProductsPage() {
           ))}
         </div>
       ) : (
-        <div className="space-y-6">
-          {filtered.map(product => {
-            const isExpanded = expandedRecipe === product._id;
+        <div className="space-y-12">
+          {['Juice', 'Shake', 'Fruit Plate', 'Smoothie', 'Other'].map(category => {
+            const categoryProducts = filtered.filter(p => p.category === category);
+            if (categoryProducts.length === 0) return null;
+            
+            let categoryIcon = 'local_drink';
+            if (category === 'Shake' || category === 'Smoothie') categoryIcon = 'blender';
+            if (category === 'Fruit Plate') categoryIcon = 'nutrition';
 
             return (
-              <div key={product._id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                {/* Product Header Row */}
-              <div className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/20">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface-container border border-slate-100">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-headline font-bold text-lg text-slate-800">{product.name}</h3>
-                      <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-full ${product.isActive ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {product.isActive ? 'Active' : 'Draft'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 font-medium">Category: {product.category} • Price: ₹{product.price}</p>
-                  </div>
-                </div>
+              <div key={category} className="space-y-6">
+                <h2 className="text-xl font-headline font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <span className="material-symbols-outlined text-orange-500">{categoryIcon}</span>
+                  {category}s
+                </h2>
+                <div className="space-y-6">
+                  {categoryProducts.map(product => {
+                    const isExpanded = expandedRecipe === product._id;
 
-                <div className="flex items-center gap-3">
-                  <button onClick={() => openEdit(product)} className="px-4 py-2 bg-surface-container-lowest border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
-                    Edit Product
-                  </button>
-                  <button
-                    onClick={() => setExpandedRecipe(isExpanded ? null : product._id)}
-                    className={`px-4 py-2 border text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-2
-                      ${isExpanded ? 'bg-primary border-primary text-white' : 'bg-orange-50 border-orange-100 text-primary'}`}
-                  >
-                    <span className="material-symbols-outlined text-sm">{isExpanded ? 'expand_less' : 'receipt_long'}</span>
-                    {isExpanded ? 'Close Recipe' : 'View Recipe'}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
-                      if (!isLiveMode) { alert('Enable Live Mode to delete.'); return; }
-                      try {
-                        const res = await fetch(`/api/admin/products/${product._id}`, {
-                          method: 'DELETE',
-                          headers: { Authorization: `Bearer ${token}` }
-                        });
-                        if (res.ok) await refreshProducts();
-                        else alert('Failed to delete product.');
-                      } catch { alert('Error deleting product.'); }
-                    }}
-                    className="px-3 py-2 border border-rose-200 text-rose-500 text-xs font-bold rounded-xl hover:bg-rose-50 transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-sm">delete</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Recipe Drawer (Expandable) */}
-              {isExpanded && (
-                <div className="border-t border-slate-100 bg-slate-50 p-6 animate-in slide-in-from-top-2 duration-200">
-                  <div className="flex flex-col xl:flex-row gap-8">
-                    {/* Left: Recipe Table and COGS */}
-                    <div className="flex-1">
-                      <div className="flex justify-between items-end mb-4">
-                        <div>
-                          <h4 className="font-headline font-bold text-sm text-slate-800 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary text-sm">science</span>
-                            Production Recipe (Trade Secret)
-                          </h4>
-                          <p className="text-[10px] text-slate-400 mt-1">Exact quantities per 1 bottle yield. This feeds into procurement logic.</p>
-                        </div>
-                        <button onClick={() => openEdit(product)} className="text-xs font-bold text-primary hover:underline cursor-pointer">Edit Recipe</button>
-                      </div>
-
-                      <div className="bg-white rounded-xl border border-slate-100 overflow-hidden mb-4">
-                        <table className="w-full text-left whitespace-nowrap">
-                          <thead>
-                            <tr className="bg-surface-container-lowest border-b border-slate-50">
-                              <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Raw Material</th>
-                              <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Qty Per Bottle</th>
-                              <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Est. Cost</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50">
-                            {product.recipe && product.recipe.length > 0 ? product.recipe.map((req: any, idx: number) => {
-                              const materialItem = ingredients.find(m => m._id === req.ingredientId);
-                              const cost = materialItem ? (materialItem.marketPrice * req.qtyPerBottle).toFixed(2) : '0.00';
-                              return (
-                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                  <td className="px-5 py-3 text-sm font-bold text-slate-800">{req.ingredientName || materialItem?.name}</td>
-                                  <td className="px-5 py-3 text-sm font-medium text-slate-600">{req.qtyPerBottle} <span className="text-xs text-slate-400">{req.unit || materialItem?.unit}</span></td>
-                                  <td className="px-5 py-3 text-sm font-bold text-slate-600">₹{cost}</td>
-                                </tr>
-                              );
-                            }) : (
-                              <tr>
-                                <td colSpan={3} className="px-5 py-8 text-center text-sm font-bold text-slate-400 italic">No recipe defined yet.</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* COGS Calculation Box */}
-                      {product.recipe && product.recipe.length > 0 && (
-                        <div className="bg-white border text-sm border-slate-100 rounded-xl p-4 flex justify-between items-center shadow-sm">
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Financials</p>
-                            <p className="font-bold text-slate-800">COGS (Cost to Make): <span className="text-rose-500 font-extrabold">₹{
-                              product.recipe.reduce((total: number, req: any) => {
-                                const m = ingredients.find(rm => rm._id === req.ingredientId);
-                                return m ? total + (m.marketPrice * req.qtyPerBottle) : total;
-                              }, 0).toFixed(2)
-                            }</span></p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Gross Margin</p>
-                            <p className="font-bold text-green-600 text-lg">₹{(product.price - product.recipe.reduce((total: number, req: any) => {
-                              const m = ingredients.find(rm => rm._id === req.ingredientId);
-                              return m ? total + (m.marketPrice * req.qtyPerBottle) : total;
-                            }, 0)).toFixed(2)}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right: Recipe Instructions */}
-                    <div className="w-full xl:w-1/3">
-                      <div className="flex justify-between items-end mb-4">
-                        <div>
-                          <h4 className="font-headline font-bold text-sm text-slate-800 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary text-sm">format_list_numbered</span>
-                            Prep Instructions
-                          </h4>
-                          <p className="text-[10px] text-slate-400 mt-1">Standard Operating Procedure.</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-white rounded-xl border border-slate-100 p-5 h-[calc(100%-48px)] overflow-y-auto">
-                        {product.recipeInstructions && product.recipeInstructions.length > 0 ? (
-                          <div className="space-y-3">
-                            {product.recipeInstructions.map((step: string, idx: number) => (
-                              <div key={idx} className="flex gap-3 text-sm text-slate-600">
-                                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center mt-0.5 shrink-0">
-                                  {idx + 1}
-                                </span>
-                                <span className="leading-relaxed">{step}</span>
+                    return (
+                      <div key={product._id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        {/* Product Header Row */}
+                        <div className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/20">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface-container border border-slate-100">
+                              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`w-2 h-2 rounded-full ${product.isActive ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                                <h3 className="font-headline font-bold text-lg text-slate-900">{product.name}</h3>
+                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-[10px] font-black uppercase tracking-widest">{product.category}</span>
                               </div>
-                            ))}
+                              <p className="text-xs text-slate-500 font-medium">₹{product.price} • {product.servingSize}{product.unit}</p>
+                            </div>
                           </div>
-                        ) : (
-                          <p className="text-sm font-bold text-slate-400 italic text-center mt-6">No prep instructions defined.</p>
+                          <div className="flex gap-2 w-full md:w-auto">
+                            <button
+                              onClick={() => setExpandedRecipe(isExpanded ? null : product._id)}
+                              className={`flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1 ${isExpanded ? 'bg-orange-50 text-orange-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            >
+                              <span className="material-symbols-outlined text-[16px]">{isExpanded ? 'expand_less' : 'receipt_long'}</span>
+                              Recipe
+                            </button>
+                            <button
+                              onClick={() => openEdit(product)}
+                              className="flex-1 md:flex-none px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 text-xs font-bold transition-colors flex items-center justify-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Expandable Recipe Section */}
+                        {isExpanded && (
+                          <div className="border-t border-slate-100 bg-slate-50 p-6 animate-in slide-in-from-top-4 duration-300">
+                            <div className="flex flex-col xl:flex-row gap-8">
+                              {/* Left: Recipe Ingredients */}
+                              <div className="w-full xl:w-2/3">
+                                <div className="flex justify-between items-end mb-4">
+                                  <div>
+                                    <h4 className="font-headline font-bold text-sm text-slate-800 flex items-center gap-2">
+                                      <span className="material-symbols-outlined text-primary text-sm">blender</span>
+                                      Recipe Breakdown
+                                    </h4>
+                                    <p className="text-[10px] text-slate-400 mt-1">Costing per {product.servingSize}{product.unit} bottle.</p>
+                                  </div>
+                                </div>
+
+                                {(!product.recipe || !product.recipe.length) ? (
+                                  <div className="bg-white rounded-xl border border-dashed border-slate-200 p-6 text-center">
+                                    <p className="text-sm font-bold text-slate-400">No recipe defined yet.</p>
+                                  </div>
+                                ) : (
+                                  <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
+                                    <table className="w-full text-left">
+                                      <thead className="bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                          <th className="p-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Ingredient</th>
+                                          <th className="p-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Qty</th>
+                                          <th className="p-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Cost (Est)</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-50">
+                                        {product.recipe.map((req: any, idx: number) => {
+                                          const mat = ingredients.find(rm => rm._id === req.ingredientId);
+                                          const cost = mat ? (mat.marketPrice * req.qtyPerBottle) : 0;
+                                          return (
+                                            <tr key={idx} className="hover:bg-slate-50/50">
+                                              <td className="p-3">
+                                                <p className="text-sm font-bold text-slate-700">{mat?.name || 'Unknown'}</p>
+                                                <p className="text-[10px] text-slate-400">Market: ₹{mat?.marketPrice || 0}/{mat?.unit || 'unit'}</p>
+                                              </td>
+                                              <td className="p-3 text-right">
+                                                <span className="inline-block bg-slate-100 px-2 py-1 rounded text-xs font-bold text-slate-600">
+                                                  {req.qtyPerBottle} {mat?.unit}
+                                                </span>
+                                              </td>
+                                              <td className="p-3 text-right text-sm font-bold text-slate-700">
+                                                ₹{cost.toFixed(2)}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                    <div className="bg-slate-50 border-t border-slate-100 p-4 flex justify-between items-center">
+                                      <div>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total COGS</p>
+                                        <p className="font-bold text-slate-900 text-lg">₹{product.recipe.reduce((total: number, req: any) => {
+                                          const m = ingredients.find(rm => rm._id === req.ingredientId);
+                                          return m ? total + (m.marketPrice * req.qtyPerBottle) : total;
+                                        }, 0).toFixed(2)}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Gross Margin</p>
+                                        <p className="font-bold text-green-600 text-lg">₹{(product.price - product.recipe.reduce((total: number, req: any) => {
+                                          const m = ingredients.find(rm => rm._id === req.ingredientId);
+                                          return m ? total + (m.marketPrice * req.qtyPerBottle) : total;
+                                        }, 0)).toFixed(2)}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Right: Recipe Instructions */}
+                              <div className="w-full xl:w-1/3">
+                                <div className="flex justify-between items-end mb-4">
+                                  <div>
+                                    <h4 className="font-headline font-bold text-sm text-slate-800 flex items-center gap-2">
+                                      <span className="material-symbols-outlined text-primary text-sm">format_list_numbered</span>
+                                      Prep Instructions
+                                    </h4>
+                                    <p className="text-[10px] text-slate-400 mt-1">Standard Operating Procedure.</p>
+                                  </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl border border-slate-100 p-5 h-[calc(100%-48px)] overflow-y-auto">
+                                  {product.recipeInstructions && product.recipeInstructions.length > 0 ? (
+                                    <div className="space-y-3">
+                                      {product.recipeInstructions.map((step: string, idx: number) => (
+                                        <div key={idx} className="flex gap-3 text-sm text-slate-600">
+                                          <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center mt-0.5 shrink-0">
+                                            {idx + 1}
+                                          </span>
+                                          <span className="leading-relaxed">{step}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm font-bold text-slate-400 italic text-center mt-6">No prep instructions defined.</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+              <p className="text-sm font-bold text-slate-400">No products found matching your search.</p>
             </div>
-          );
-        })}
-        {filtered.length === 0 && (
-          <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-            <p className="text-sm font-bold text-slate-400">No products found matching your search.</p>
-          </div>
-        )}
+          )}
         </div>
       )}
 
@@ -763,5 +773,13 @@ export default function AdminProductsPage() {
         </div>
       )}
     </>
+  );
+}
+
+export default function AdminProductsPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64"><span className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></span></div>}>
+      <AdminProductsContent />
+    </Suspense>
   );
 }
