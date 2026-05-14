@@ -162,47 +162,67 @@ export default function SurveyPage() {
           </div>
           <p className="text-sm text-slate-500 mb-4">Select the ones you'd love to drink in the morning.</p>
           
-          <div className="grid grid-cols-2 gap-4">
-            {displayProducts.map(product => {
-              const isSelected = selectedJuices.includes(product.name);
+          <div className="space-y-8">
+            {['Juice', 'Shake', 'Fruit Plate'].map(category => {
+              const categoryProducts = displayProducts.filter(p => p.category === category);
+              if (categoryProducts.length === 0) return null;
+              
+              let categoryIcon = 'local_drink';
+              if (category === 'Shake') categoryIcon = 'blender';
+              if (category === 'Fruit Plate') categoryIcon = 'nutrition';
+
               return (
-                <div 
-                  key={product._id}
-                  onClick={() => toggleJuice(product.name)}
-                  className={`relative bg-white rounded-3xl p-3 border-2 transition-all cursor-pointer overflow-hidden ${isSelected ? 'border-orange-500 shadow-orange-100 shadow-xl scale-[1.02]' : 'border-slate-100 hover:border-slate-300 shadow-sm'}`}
-                >
-                  {isSelected && (
-                    <div className="absolute top-3 right-3 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white z-10 shadow-md animate-in zoom-in duration-200">
-                      <span className="material-symbols-outlined text-[14px] font-bold">check</span>
-                    </div>
-                  )}
-                  {/* Info Icon */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDetailProduct(product); }}
-                    className="absolute top-3 left-3 w-7 h-7 bg-white rounded-full flex items-center justify-center text-orange-500 z-10 shadow-lg ring-1 ring-black/5 active:scale-90 transition-transform"
-                  >
-                    <span className="material-symbols-outlined text-[16px] font-bold">info</span>
-                  </button>
-                  <div className="aspect-square bg-slate-50 rounded-2xl mb-3 overflow-hidden relative">
-                    <Image src={product.image} alt={product.name} fill className="object-cover" />
+                <div key={category}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base">{categoryIcon}</span>
+                    {category === 'Juice' ? 'Fresh Cold-Pressed Juices' : category === 'Shake' ? 'Protein & Thick Shakes' : 'Fresh Fruit Plates'}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {categoryProducts.map(product => {
+                      const isSelected = selectedJuices.includes(product.name);
+                      return (
+                        <div 
+                          key={product._id}
+                          onClick={() => toggleJuice(product.name)}
+                          className={`relative bg-white rounded-3xl p-3 border-2 transition-all cursor-pointer overflow-hidden flex flex-col ${isSelected ? 'border-orange-500 shadow-orange-100 shadow-xl scale-[1.02]' : 'border-slate-100 hover:border-slate-300 shadow-sm'}`}
+                        >
+                          {isSelected && (
+                            <div className="absolute top-3 right-3 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white z-10 shadow-md animate-in zoom-in duration-200">
+                              <span className="material-symbols-outlined text-[14px] font-bold">check</span>
+                            </div>
+                          )}
+                          {/* Info Icon */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDetailProduct(product); }}
+                            className="absolute top-3 left-3 w-7 h-7 bg-white rounded-full flex items-center justify-center text-orange-500 z-10 shadow-lg ring-1 ring-black/5 active:scale-90 transition-transform"
+                          >
+                            <span className="material-symbols-outlined text-[16px] font-bold">info</span>
+                          </button>
+                          <div className="aspect-square bg-slate-50 rounded-2xl mb-3 overflow-hidden relative shrink-0">
+                            <Image src={product.image} alt={product.name} fill className="object-cover" />
+                          </div>
+                          <h3 className="font-bold text-sm text-slate-900 leading-tight mb-1">{product.name}</h3>
+                          <p className="text-[10px] text-slate-500 font-medium line-clamp-2 mb-2 flex-grow">{product.ingredients?.join(', ')}</p>
+                          
+                          {/* Benefits Badges */}
+                          {product.benefits && product.benefits.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-auto pt-2">
+                              {product.benefits.slice(0, 2).map((benefit: string, idx: number) => (
+                                <span key={idx} className="bg-slate-50 text-slate-600 text-[9px] px-1.5 py-0.5 rounded-md font-semibold border border-slate-100">
+                                  {benefit}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <h3 className="font-bold text-sm text-slate-900 leading-tight mb-1">{product.name}</h3>
-                  <p className="text-[10px] text-slate-500 font-medium line-clamp-2 mb-2">{product.ingredients?.join(', ')}</p>
-                  
-                  {/* Benefits Badges */}
-                  {product.benefits && product.benefits.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-auto">
-                      {product.benefits.slice(0, 2).map((benefit: string, idx: number) => (
-                        <span key={idx} className="bg-slate-50 text-slate-600 text-[9px] px-1.5 py-0.5 rounded-md font-semibold border border-slate-100">
-                          {benefit}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               );
             })}
           </div>
+          <p className="text-[10px] text-slate-400 mt-4 italic text-center">* Images are for illustration purposes only — actual product presentation may vary. Prices are tentative and subject to change before final launch.</p>
         </section>
 
         {/* Step 3: Frequency */}

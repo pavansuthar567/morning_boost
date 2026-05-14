@@ -27,6 +27,7 @@ export default function Catalog() {
 
   const [maxPrice, setMaxPrice] = useState(500);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   const handleGoalToggle = (goal: string) => {
     setSelectedGoals(prev => 
@@ -36,6 +37,7 @@ export default function Catalog() {
 
   const filteredProducts = products.filter((p: any) => {
     if (p.price > maxPrice) return false;
+    if (selectedCategory !== 'All' && p.category !== selectedCategory) return false;
     if (selectedGoals.length > 0) {
       const match = selectedGoals.some(g => 
         p.category?.toLowerCase().includes(g.toLowerCase()) || 
@@ -46,6 +48,9 @@ export default function Catalog() {
     }
     return true;
   });
+
+  const CATEGORIES = ['All', 'Juice', 'Shake', 'Fruit Plate'];
+  const CATEGORY_ICONS: Record<string, string> = { All: 'apps', Juice: 'local_drink', Shake: 'blender', 'Fruit Plate': 'nutrition' };
 
   const handleChooseJuice = async (productId: string) => {
     if (!activeSub) {
@@ -71,6 +76,26 @@ export default function Catalog() {
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Sidebar Filters */}
           <aside className="w-full lg:w-64 space-y-10">
+            {/* Category Filter */}
+            <section>
+              <h3 className="font-headline text-xs uppercase tracking-widest text-slate-400 font-bold mb-6">Category</h3>
+              <div className="space-y-2">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                      selectedCategory === cat
+                        ? 'bg-[#FF8C00] text-white shadow-lg shadow-orange-900/10'
+                        : 'bg-white text-slate-600 hover:bg-orange-50 hover:text-[#FF8C00] border border-slate-100'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">{CATEGORY_ICONS[cat]}</span>
+                    {cat === 'All' ? 'All Products' : `${cat}s`}
+                  </button>
+                ))}
+              </div>
+            </section>
             <section>
               <h3 className="font-headline text-xs uppercase tracking-widest text-slate-400 font-bold mb-6">Health Goal</h3>
               <div className="space-y-3">
@@ -108,66 +133,89 @@ export default function Catalog() {
             </div>
           </aside>
           {/* Product Grid */}
-          <div className="flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
-              {(filteredProducts.length > 0 ? filteredProducts : []).map((p: any) => {
-                // Determine active days for this juice
-                const activeDays = activeSub?.schedule?.filter((s: any) => {
-                  const assignedId = typeof s.product === 'object' ? s.product?._id : s.product;
-                  return assignedId === p._id && !s.isPaused;
-                }).map((s: any) => DAY_SHORT[s.dayOfWeek]) || [];
+          <div className="flex-1 space-y-14">
+            {['Juice', 'Shake', 'Fruit Plate'].map(category => {
+              const categoryProducts = filteredProducts.filter((p: any) => p.category === category);
+              if (categoryProducts.length === 0) return null;
 
-                return (
-                  <div key={p._id} className="group relative bg-surface-container-lowest rounded-xl p-6 transition-all duration-500 hover:scale-[1.02] editorial-shadow">
-                    <Link href={`/catalog/${p._id}`}>
-                      <div className="relative h-80 w-full overflow-hidden rounded-lg bg-surface-container mb-6 cursor-pointer">
-                        <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={p.name} src={p.image} />
-                        <div className="absolute top-4 left-4 flex flex-col items-start gap-2">
-                          <span className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-[#FF8C00] uppercase tracking-wider shadow-sm">{p.category}</span>
-                          {activeDays.length > 0 && (
-                            <span className="bg-[#FF8C00] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-md flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                              In Rhythm: {activeDays.join(', ')}
-                            </span>
+              let catIcon = 'local_drink';
+              if (category === 'Shake') catIcon = 'blender';
+              if (category === 'Fruit Plate') catIcon = 'nutrition';
+
+              return (
+                <div key={category}>
+                  <h2 className="text-2xl font-headline font-bold text-on-surface mb-6 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-[#FF8C00] bg-orange-50 p-2 rounded-full">{catIcon}</span>
+                    {category === 'Juice' ? 'Fresh Cold-Pressed Juices' : category === 'Shake' ? 'Protein & Thick Shakes' : 'Fresh Fruit Plates'}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8">
+                    {categoryProducts.map((p: any) => {
+                      const activeDays = activeSub?.schedule?.filter((s: any) => {
+                        const assignedId = typeof s.product === 'object' ? s.product?._id : s.product;
+                        return assignedId === p._id && !s.isPaused;
+                      }).map((s: any) => DAY_SHORT[s.dayOfWeek]) || [];
+
+                      return (
+                        <div key={p._id} className="group relative bg-surface-container-lowest rounded-xl p-6 transition-all duration-500 hover:scale-[1.02] editorial-shadow">
+                          <Link href={`/catalog/${p._id}`}>
+                            <div className="relative h-80 w-full overflow-hidden rounded-lg bg-surface-container mb-6 cursor-pointer">
+                              <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={p.name} src={p.image} />
+                              <div className="absolute top-4 left-4 flex flex-col items-start gap-2">
+                                <span className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-[#FF8C00] uppercase tracking-wider shadow-sm">{p.category}</span>
+                                {activeDays.length > 0 && (
+                                  <span className="bg-[#FF8C00] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                                    In Rhythm: {activeDays.join(', ')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <Link href={`/catalog/${p._id}`}>
+                                <h2 className="font-headline text-2xl font-bold text-on-surface hover:text-[#FF8C00] transition-colors cursor-pointer">{p.name}</h2>
+                              </Link>
+                              <p className="text-on-surface-variant text-sm font-medium italic">Cold-pressed freshness</p>
+                            </div>
+                            <span className="text-2xl font-bold text-[#FF8C00]">₹{p.price}</span>
+                          </div>
+                          {p.benefits && p.benefits.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-5 mb-6">
+                              {p.benefits.map((benefit: string, idx: number) => (
+                                <span key={idx} className="bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold shadow-sm opacity-90 transition-all cursor-default">
+                                  {benefit}
+                                </span>
+                              ))}
+                            </div>
                           )}
+                          <button
+                            disabled={subsLoading}
+                            onClick={() => handleChooseJuice(p._id)}
+                            className="w-full juicy-gradient text-white py-4 rounded-full font-bold flex items-center justify-center gap-2 active:scale-95 transition-all group-hover:shadow-xl group-hover:shadow-[#FF8C00]/30 cursor-pointer disabled:opacity-70 disabled:cursor-wait">
+                            {subsLoading ? (
+                              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            ) : (
+                              <>
+                                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>{activeSub ? 'sync_alt' : 'shopping_bag'}</span>
+                                {activeSub ? 'Swap into Schedule' : 'Start Ritual'}
+                              </>
+                            )}
+                          </button>
                         </div>
-                      </div>
-                    </Link>
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <Link href={`/catalog/${p._id}`}>
-                          <h2 className="font-headline text-2xl font-bold text-on-surface hover:text-[#FF8C00] transition-colors cursor-pointer">{p.name}</h2>
-                        </Link>
-                        <p className="text-on-surface-variant text-sm font-medium italic">Cold-pressed freshness</p>
-                      </div>
-                      <span className="text-2xl font-bold text-[#FF8C00]">₹{p.price}</span>
-                    </div>
-                    {p.benefits && p.benefits.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-5 mb-6">
-                        {p.benefits.map((benefit: string, idx: number) => (
-                          <span key={idx} className="bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold shadow-sm opacity-90 transition-all cursor-default">
-                            {benefit}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <button
-                      disabled={subsLoading}
-                      onClick={() => handleChooseJuice(p._id)}
-                      className="w-full juicy-gradient text-white py-4 rounded-full font-bold flex items-center justify-center gap-2 active:scale-95 transition-all group-hover:shadow-xl group-hover:shadow-[#FF8C00]/30 cursor-pointer disabled:opacity-70 disabled:cursor-wait">
-                      {subsLoading ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      ) : (
-                        <>
-                          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>{activeSub ? 'sync_alt' : 'shopping_bag'}</span>
-                          {activeSub ? 'Swap into Schedule' : 'Start Ritual'}
-                        </>
-                      )}
-                    </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
+            {filteredProducts.length === 0 && (
+              <div className="py-16 text-center">
+                <span className="material-symbols-outlined text-4xl text-slate-300 mb-4">search_off</span>
+                <p className="text-lg font-bold text-slate-400">No products match your filters.</p>
+                <p className="text-sm text-slate-400 mt-1">Try adjusting your category, health goal, or price range.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -1,20 +1,21 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
+import Link from 'next/link';
 import useStore from '@/store/useStore';
 
 export default function SurveyAnalyticsPage() {
-  const { fetchSurveys, surveys, isLiveMode } = useStore();
+  const { fetchSurveys, surveys, isLiveMode, products, fetchProducts } = useStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      await fetchSurveys();
+      await Promise.all([fetchSurveys(), fetchProducts()]);
       setIsLoading(false);
     };
     load();
-  }, [fetchSurveys, isLiveMode]);
+  }, [fetchSurveys, fetchProducts, isLiveMode]);
 
   // Derived Analytics
   const metrics = useMemo(() => {
@@ -130,7 +131,7 @@ export default function SurveyAnalyticsPage() {
                     <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</th>
                     <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Prospect</th>
                     <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Location</th>
-                    <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Juice Preferences</th>
+                    <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Product Preferences</th>
                     <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Frequency</th>
                   </tr>
                 </thead>
@@ -155,12 +156,34 @@ export default function SurveyAnalyticsPage() {
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-1.5">
-                          {survey.interestedProducts?.map((p: string) => (
-                            <span key={p} className="text-[10px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-md border border-green-100">
-                              {p}
-                            </span>
-                          ))}
+                        <div className="flex flex-col gap-2">
+                          {['Juice', 'Shake', 'Fruit Plate'].map(category => {
+                            const catsProducts = survey.interestedProducts?.filter((pName: string) => {
+                              const prod = products.find(p => p.name === pName);
+                              return prod ? prod.category === category : category === 'Juice'; // Default to Juice if not found
+                            });
+                            
+                            if (!catsProducts || catsProducts.length === 0) return null;
+                            
+                            let catColor = 'bg-green-50 text-green-700 border-green-100 hover:bg-green-100';
+                            if (category === 'Shake') catColor = 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100';
+                            if (category === 'Fruit Plate') catColor = 'bg-pink-50 text-pink-700 border-pink-100 hover:bg-pink-100';
+
+                            return (
+                              <div key={category} className="flex items-start gap-1">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-1 w-12">{category}</span>
+                                <div className="flex flex-wrap gap-1.5 flex-1">
+                                  {catsProducts.map((p: string) => (
+                                    <Link href={`/admin-dashboard/products?search=${encodeURIComponent(p)}`} key={p}>
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border transition-colors cursor-pointer inline-block ${catColor}`}>
+                                        {p}
+                                      </span>
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </td>
                       <td className="py-4 px-6 text-sm font-semibold text-slate-700">

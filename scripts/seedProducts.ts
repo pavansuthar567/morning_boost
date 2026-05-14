@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const ingredientSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   category: { type: String, enum: ['fruit', 'veg', 'misc'], required: true },
-  unit: { type: String, enum: ['kg', 'gm', 'pcs', 'ml', 'bunch'], required: true },
+  unit: { type: String, enum: ['kg', 'gm', 'pcs', 'ml', 'bunch', 'l'], required: true },
   marketPrice: { type: Number, default: 0 },
   qtyAvailable: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
@@ -22,7 +22,7 @@ const recipeSchema = new mongoose.Schema({
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   price: { type: Number, required: true, default: 0 },
-  category: { type: String, enum: ['Juice', 'Shake', 'Smoothie', 'Other'], default: 'Juice' },
+  category: { type: String, enum: ['Juice', 'Shake', 'Smoothie', 'Fruit Plate', 'Other'], default: 'Juice' },
   healthGoal: { type: String, enum: ['Immunity', 'Energy', 'Detox', 'Daily Core', 'Wellness', 'Hydration'] },
   image: { type: String, required: true },
   description: String,
@@ -73,13 +73,21 @@ async function seedDatabase() {
       { name: 'Red Grape', category: 'fruit', unit: 'kg', marketPrice: 90 },
       { name: 'Kale', category: 'veg', unit: 'kg', marketPrice: 60 },
       { name: 'Parsley', category: 'misc', unit: 'bunch', marketPrice: 15 },
-      // New for simple juices
       { name: 'Mango', category: 'fruit', unit: 'kg', marketPrice: 100 },
       { name: 'Sweet Lime (Mosambi)', category: 'fruit', unit: 'kg', marketPrice: 60 },
       { name: 'Amla (Indian Gooseberry)', category: 'fruit', unit: 'kg', marketPrice: 80 },
-      { name: 'Sugarcane', category: 'misc', unit: 'kg', marketPrice: 20 },
       { name: 'Guava', category: 'fruit', unit: 'kg', marketPrice: 50 },
       { name: 'Honey', category: 'misc', unit: 'gm', marketPrice: 0.8 },
+      { name: 'Milk', category: 'misc', unit: 'l', marketPrice: 60 },
+      { name: 'Banana', category: 'fruit', unit: 'kg', marketPrice: 50 },
+      { name: 'Roasted Peanut Butter', category: 'misc', unit: 'kg', marketPrice: 400 },
+      { name: 'Dates', category: 'misc', unit: 'kg', marketPrice: 300 },
+      { name: 'Almonds', category: 'misc', unit: 'kg', marketPrice: 800 },
+      { name: 'Cashews', category: 'misc', unit: 'kg', marketPrice: 800 },
+      { name: 'Cinnamon', category: 'misc', unit: 'gm', marketPrice: 2 },
+      { name: 'Coffee Powder', category: 'misc', unit: 'gm', marketPrice: 2 },
+      { name: 'Cocoa Powder', category: 'misc', unit: 'gm', marketPrice: 1.5 },
+      { name: 'Oats', category: 'misc', unit: 'kg', marketPrice: 150 },
     ];
     const insertedIngredients = await Ingredient.insertMany(rawMaterials);
     const ing = (name: string) => insertedIngredients.find((i: any) => i.name === name)?._id;
@@ -87,7 +95,7 @@ async function seedDatabase() {
     // ── RECIPES ──
     console.log("📜 Seeding Recipes...");
     const recipes = [
-      // === PREMIUM BLENDS (existing 6) ===
+      // === PREMIUM BLENDS ===
       { name: 'Green Vitality Recipe', yieldAmount: 300, ingredients: [
         { ingredient: ing('Cucumber'), quantity: 0.15 }, { ingredient: ing('Green Apple'), quantity: 0.15 },
         { ingredient: ing('Celery'), quantity: 0.10 }, { ingredient: ing('Spinach'), quantity: 0.05 },
@@ -118,7 +126,7 @@ async function seedDatabase() {
         { ingredient: ing('Lemon'), quantity: 1 }, { ingredient: ing('Green Apple'), quantity: 0.05 },
       ], instructions: ['Wash all greens in ozone water.', 'Cold press cucumber and celery.', 'Press kale, parsley, green apple.', 'Finish with peeled lemon.'] },
 
-      // === SIMPLE PURE JUICES (new 10) ===
+      // === SIMPLE PURE JUICES ===
       { name: 'Pure Orange Recipe', yieldAmount: 300, ingredients: [
         { ingredient: ing('Orange'), quantity: 0.4 },
       ], instructions: ['Peel oranges.', 'Cold press directly.', 'Strain and serve fresh.'] },
@@ -151,6 +159,59 @@ async function seedDatabase() {
       { name: 'Mango Magic Recipe', yieldAmount: 300, ingredients: [
         { ingredient: ing('Mango'), quantity: 0.35 },
       ], instructions: ['Peel and pit mangoes.', 'Cold press mango pulp.', 'Serve chilled.'] },
+
+      // === FRUIT PLATES ===
+      { name: 'Classic Melon Apple Bowl Recipe', yieldAmount: 300, ingredients: [
+        { ingredient: ing('Watermelon'), quantity: 0.15 },
+        { ingredient: ing('Red Apple'), quantity: 0.1 },
+        { ingredient: ing('Green Apple'), quantity: 0.05 },
+      ], instructions: ['Wash all fruits.', 'Cut watermelon into bite-sized cubes.', 'Slice apples evenly.', 'Arrange in a bowl and sprinkle with a dash of black salt.'] },
+      { name: 'Tropical Citrus Mix Recipe', yieldAmount: 300, ingredients: [
+        { ingredient: ing('Pineapple'), quantity: 0.1 },
+        { ingredient: ing('Orange'), quantity: 0.1 },
+        { ingredient: ing('Sweet Lime (Mosambi)'), quantity: 0.1 },
+        { ingredient: ing('Pomegranate'), quantity: 0.05 },
+      ], instructions: ['Extract pomegranate arils.', 'Peel and segment oranges and sweet lime.', 'Cut pineapple into chunks.', 'Toss gently in a bowl.'] },
+      { name: 'Premium Power Platter Recipe', yieldAmount: 300, ingredients: [
+        { ingredient: ing('Mango'), quantity: 0.1 },
+        { ingredient: ing('Guava'), quantity: 0.1 },
+        { ingredient: ing('Red Apple'), quantity: 0.1 },
+        { ingredient: ing('Pomegranate'), quantity: 0.05 },
+      ], instructions: ['Slice mango, guava, and apple beautifully.', 'Arrange on a platter.', 'Garnish with pomegranate arils and mixed seeds.'] },
+
+      // === PROTEIN SHAKES ===
+      { name: 'Peanut Butter Power Shake Recipe', yieldAmount: 300, ingredients: [
+        { ingredient: ing('Milk'), quantity: 0.2 },
+        { ingredient: ing('Banana'), quantity: 0.1 },
+        { ingredient: ing('Roasted Peanut Butter'), quantity: 0.03 },
+        { ingredient: ing('Dates'), quantity: 0.02 },
+      ], instructions: ['Add chilled milk to blender.', 'Add peeled banana, peanut butter, and pitted dates.', 'Blend until thick and creamy.'] },
+      { name: 'Almond Date Vitality Shake Recipe', yieldAmount: 300, ingredients: [
+        { ingredient: ing('Milk'), quantity: 0.2 },
+        { ingredient: ing('Almonds'), quantity: 0.02 },
+        { ingredient: ing('Dates'), quantity: 0.03 },
+        { ingredient: ing('Cinnamon'), quantity: 1 },
+      ], instructions: ['Soak almonds overnight.', 'Add milk, almonds, dates, and a pinch of cinnamon to blender.', 'Blend until perfectly smooth.'] },
+      { name: 'Cashew Mango Thick Shake Recipe', yieldAmount: 300, ingredients: [
+        { ingredient: ing('Milk'), quantity: 0.15 },
+        { ingredient: ing('Mango'), quantity: 0.15 },
+        { ingredient: ing('Cashews'), quantity: 0.02 },
+        { ingredient: ing('Honey'), quantity: 10 },
+      ], instructions: ['Add milk and fresh mango pulp to blender.', 'Add cashews and honey.', 'Blend until thick and creamy.'] },
+      
+      // === NEW QUICK BLEND SHAKES ===
+      { name: 'Cold Coffee Banana Shake Recipe', yieldAmount: 300, ingredients: [
+        { ingredient: ing('Milk'), quantity: 0.2 },
+        { ingredient: ing('Banana'), quantity: 0.1 },
+        { ingredient: ing('Coffee Powder'), quantity: 2 },
+        { ingredient: ing('Honey'), quantity: 10 },
+      ], instructions: ['Add chilled milk, banana, coffee powder, and honey to high-speed blender.', 'Blend for 60 seconds until frothy.', 'Serve chilled.'] },
+      { name: 'Choco Oats Protein Shake Recipe', yieldAmount: 300, ingredients: [
+        { ingredient: ing('Milk'), quantity: 0.2 },
+        { ingredient: ing('Oats'), quantity: 0.03 },
+        { ingredient: ing('Cocoa Powder'), quantity: 5 },
+        { ingredient: ing('Dates'), quantity: 0.02 },
+      ], instructions: ['Add chilled milk, rolled oats, cocoa powder, and pitted dates to blender.', 'Blend on high for 90 seconds.', 'Pour into tall glass.'] },
     ];
     const insertedRecipes = await Recipe.insertMany(recipes);
     const rec = (name: string) => insertedRecipes.find((r: any) => r.name === name)?._id;
@@ -196,7 +257,7 @@ async function seedDatabase() {
         detailedBenefits: [{ title: 'Highly Alkalizing', description: 'Chlorophyll restores alkaline pH balance.' }, { title: 'Bone Health', description: 'Kale is packed with Vitamin K.' }],
         recipe: rec('Alkaline Green Recipe'), isActive: true },
 
-      // === SIMPLE PURE JUICES (new 10) ===
+      // === SIMPLE PURE JUICES ===
       { name: 'Pure Orange', price: 80, category: 'Juice', healthGoal: 'Immunity', servingSize: 300, unit: 'ml',
         image: '/products/pure_orange.png',
         description: '100% pure cold-pressed orange juice. Classic immunity booster.',
@@ -257,10 +318,64 @@ async function seedDatabase() {
         benefits: ['🥭 King of Fruits', '⚡ Natural Energy', '✨ Skin Glow'],
         detailedBenefits: [{ title: 'Natural Energy', description: 'Natural sugars from mango provide sustained energy without crashes.' }],
         recipe: rec('Mango Magic Recipe'), isActive: true },
+
+      // === FRUIT PLATES ===
+      { name: 'Classic Melon & Apple Bowl', price: 80, category: 'Fruit Plate', healthGoal: 'Hydration', servingSize: 300, unit: 'gm',
+        image: '/products/classic_melon_apple_bowl.png',
+        description: 'Freshly cut watermelon and crisp apples with a dash of black salt.',
+        benefits: ['💧 Hydrating', '🌿 Cooling', '🍎 Daily Fiber'],
+        detailedBenefits: [{ title: 'Water-Rich', description: 'Watermelon provides essential hydration, perfect for hot mornings.' }],
+        recipe: rec('Classic Melon Apple Bowl Recipe'), isActive: true },
+      { name: 'Tropical Citrus Mix', price: 110, category: 'Fruit Plate', healthGoal: 'Immunity', servingSize: 300, unit: 'gm',
+        image: '/products/tropical_citrus_mix.png',
+        description: 'A tangy, sweet mix of fresh pineapple, orange, mosambi, and pomegranate.',
+        benefits: ['🍊 Vitamin C Surge', '🛡️ Immunity', '✨ Refreshing'],
+        detailedBenefits: [{ title: 'High Vitamin C', description: 'Citrus fruits provide a massive natural immunity boost.' }],
+        recipe: rec('Tropical Citrus Mix Recipe'), isActive: true },
+      { name: 'Premium Power Platter', price: 150, category: 'Fruit Plate', healthGoal: 'Energy', servingSize: 300, unit: 'gm',
+        image: '/products/premium_power_platter.png',
+        description: 'Premium Alphonso mango, pink guava, apple, and pomegranate, sprinkled with seeds.',
+        benefits: ['⚡ Instant Energy', '💪 Antioxidants', '🥭 Premium Taste'],
+        detailedBenefits: [{ title: 'Antioxidant Rich', description: 'Pomegranate and guava are loaded with free-radical fighting antioxidants.' }],
+        recipe: rec('Premium Power Platter Recipe'), isActive: true },
+
+      // === PROTEIN SHAKES ===
+      { name: 'Peanut Butter Power Shake', price: 120, category: 'Shake', healthGoal: 'Energy', servingSize: 300, unit: 'ml',
+        image: '/products/peanut_butter_power_shake.png',
+        description: 'Thick, creamy protein shake with roasted peanut butter, banana, and dates.',
+        benefits: ['🥜 High Protein', '⚡ Sustained Energy', '🍌 Potassium Rich'],
+        detailedBenefits: [{ title: 'High Protein', description: 'Roasted peanut butter provides excellent plant-based protein.' }],
+        recipe: rec('Peanut Butter Power Shake Recipe'), isActive: true },
+      { name: 'Almond Date Vitality Shake', price: 140, category: 'Shake', healthGoal: 'Daily Core', servingSize: 300, unit: 'ml',
+        image: '/products/almond_date_vitality_shake.png',
+        description: 'Nutrient-dense shake made with soaked almonds, premium dates, and cinnamon.',
+        benefits: ['🧠 Brain Health', '🦴 Calcium Rich', '✨ Healthy Fats'],
+        detailedBenefits: [{ title: 'Healthy Fats', description: 'Almonds provide essential fatty acids for brain health.' }],
+        recipe: rec('Almond Date Vitality Shake Recipe'), isActive: true },
+      { name: 'Cashew Mango Thick Shake', price: 150, category: 'Shake', healthGoal: 'Wellness', servingSize: 300, unit: 'ml',
+        image: '/products/cashew_mango_thick_shake.png',
+        description: 'Indulgent, creamy mango milkshake blended with rich cashews and honey.',
+        benefits: ['🥭 Immune Boosting', '✨ Natural Glow', '💛 Creamy Indulgence'],
+        detailedBenefits: [{ title: 'Immune Boosting', description: 'Mango provides Vitamin A, while cashews add zinc and magnesium.' }],
+        recipe: rec('Cashew Mango Thick Shake Recipe'), isActive: true },
+
+      // === NEW QUICK BLEND SHAKES ===
+      { name: 'Cold Coffee Banana Shake', price: 130, category: 'Shake', healthGoal: 'Energy', servingSize: 300, unit: 'ml',
+        image: '/products/cold_coffee_banana_shake.png',
+        description: 'A perfect morning kickstart with cold coffee, creamy banana, and honey.',
+        benefits: ['☕ Instant Energy', '🍌 Potassium Rich', '🥛 Creamy Base'],
+        detailedBenefits: [{ title: 'Instant Caffeine Kick', description: 'Cold coffee provides immediate alertness.' }],
+        recipe: rec('Cold Coffee Banana Shake Recipe'), isActive: true },
+      { name: 'Choco Oats Protein Shake', price: 140, category: 'Shake', healthGoal: 'Energy', servingSize: 300, unit: 'ml',
+        image: '/products/choco_oats_protein_shake.png',
+        description: 'Rich chocolate shake with raw rolled oats and sweet dates for sustained energy.',
+        benefits: ['🍫 Mood Booster', '🌾 Sustained Energy', '💪 High Fiber'],
+        detailedBenefits: [{ title: 'Complex Carbs', description: 'Oats provide sustained energy throughout the morning.' }],
+        recipe: rec('Choco Oats Protein Shake Recipe'), isActive: true },
     ];
 
     await Product.insertMany(products);
-    console.log("🎉 Successfully seeded all data! (6 premium + 10 simple juices)");
+    console.log("🎉 Successfully seeded ALL 24 Products (16 Juices, 3 Fruit Plates, 5 Shakes)!");
     process.exit(0);
   } catch (error) {
     console.error("❌ Error:", error);

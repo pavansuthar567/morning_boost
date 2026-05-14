@@ -60,6 +60,32 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Pure Promise Strip */}
+        <section className="py-12 bg-white border-y border-slate-100">
+          <div className="max-w-7xl mx-auto px-8">
+            <div className="text-center mb-8">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">Our Pure Promise</p>
+              <p className="text-sm text-slate-500 font-medium max-w-xl mx-auto">No added salt, sugar, water, chemicals or preservatives. No heat treatment, pasteurization or any kind of processing — so you get the maximum from your raw, natural juice.</p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+              {[
+                { icon: 'block', label: 'No Added Sugar' },
+                { icon: 'water_drop', label: 'No Added Water' },
+                { icon: 'science', label: 'No Chemicals' },
+                { icon: 'shield', label: 'No Preservatives' },
+                { icon: 'local_fire_department', label: 'No Heat Treatment' },
+                { icon: 'eco', label: '100% Raw & Natural' },
+              ].map(item => (
+                <div key={item.label} className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 rounded-full border border-orange-100">
+                  <span className="material-symbols-outlined text-primary text-base">{item.icon}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Benefits Section */}
         <section className="py-32 bg-surface" id="health-goals">
           <div className="max-w-7xl mx-auto px-8">
