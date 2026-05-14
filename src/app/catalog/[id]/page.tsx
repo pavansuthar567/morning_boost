@@ -9,15 +9,25 @@ import Link from 'next/link';
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { adminData } = useStore();
+  const { products, fetchProducts } = useStore();
   const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    // In a real app, this would fetch from an API: /api/products/[id]
-    // Here we find it in our mock inventory.
-    const found = adminData.inventory.find(p => p._id === id);
-    if (found) setProduct(found as Product);
-  }, [id, adminData]);
+    if (products.length === 0) {
+      fetchProducts();
+      return;
+    }
+    const found = products.find(p => p._id === id);
+    if (found) {
+      setProduct(found as Product);
+    } else {
+      // Direct API fallback
+      fetch(`/api/products/${id}`)
+        .then(res => res.json())
+        .then(data => { if (data.success && data.product) setProduct(data.product); })
+        .catch(() => {});
+    }
+  }, [id, products, fetchProducts]);
 
   if (!product) {
     return (
