@@ -1500,7 +1500,7 @@ const useStore = create<AppStore>()(
       }
     }),
     {
-      name: 'morning-juice-store',
+      name: 'morning-boost-store',
       partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated, isLiveMode: state.isLiveMode }),
     }
   )
